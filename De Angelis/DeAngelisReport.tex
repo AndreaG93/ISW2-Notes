@@ -1,0 +1,126 @@
+\documentclass[sigchi]{acmart}
+\usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{dcolumn}
+\usepackage[noend]{algpseudocode}
+
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+\settopmatter{printacmref=false, printccs=false, printfolios =false}
+\setcopyright{none} 
+\renewcommand\footnotetextcopyrightpermission[1]{}
+
+\acmConference[IWS2 Projects A.A. 2019-2020]{ }{May 31, 2020}{ }
+
+
+
+
+
+
+\begin{document}
+
+\title{Deliverable 2 Report}
+
+\author{Andrea Graziani}
+\email{andrea.graziani93@outlook.it}
+\affiliation{%
+  \institution{Università Degli Studi di Roma Tor Vergata}
+  \city{Rome}
+  \state{Italy}
+}
+
+\renewcommand{\shortauthors}{Andrea Graziani (0273395)}
+
+
+\keywords{Labeling Defective Classes}
+\maketitle
+
+\section{Introduction}
+
+\begin{table*}
+  \caption{Invalid equivalence classes and representatives of \texttt{DiskChecker} method}
+  \label{tab:libraries}
+  \begin{tabular}{l|lp{5cm}|p{5cm}}
+    \toprule
+    \textbf{Parameter} & \multicolumn{2}{l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\multirow{3}{*}{\texttt{threshold}} & $vEC_1$: & $0 < \texttt{warnThreshold} \leq x < 1$  & $0,5$ \\    
+    
+    \\[-1em] 
+    & $iEC_1$: & $x \leq 0$ & $0$ \\ 
+    
+    \\[-1em]
+    & $iEC_2$: & $x \geq 1$ & $1$ \\
+    
+    \\[-1em]
+    & $iEC_3$: & $0 < x < \texttt{warnThreshold} < 1$ & $1$ \\
+    
+    \\[-1em] \hline 
+	   
+    \multirow{3}{*}{\texttt{warnThreshold}} & $vEC_1$: & $0 < x \leq \texttt{threshold} < 1 $  & $0,5$ \\    
+    
+    \\[-1em] 
+    & $iEC_1$: & $x \leq 0$ & $0$ \\ 
+    
+	\\[-1em] 
+    & $iEC_2$: & $1 > x > \texttt{threshold} > 0$ & $0$ \\  
+    
+    \\[-1em] 
+    & $iEC_3$: & $x \geq 1$ & $1$ \\    
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{table*}
+  \caption{Invalid equivalence classes and representatives of \texttt{getTotalFreeSpace} method}
+  \label{tab:libraries}
+  \begin{tabular}{l|lp{5cm}|p{5cm}}
+    \toprule
+    \textbf{Parameter} & \multicolumn{2}{l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\multirow{3}{*}{\texttt{dirs}} & $vEC_1$: & Valid \texttt{List<File>} object inside which there are valid \texttt{File} objects & - \\    
+    
+    \\[-1em] 
+    & $iEC_1$: & Null object & \texttt{null} \\ 
+    
+    \\[-1em]
+    & $iEC_2$: & Valid \texttt{List<File>} object inside which there are invalid \texttt{File} objects & - \\
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+
+
+\begin{table*}
+  \caption{Libraries used in our implementation}
+  \label{tab:libraries}
+  \begin{tabular}{l|l|l}
+    \toprule
+    Name & Description & Link \\
+    \midrule
+    
+    
+    
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+
+%https://confluence.atlassian.com/jirakb/general-use-of-affect-version-s-and-fix-version-\% s-838428168.html
+
+%\bibliographystyle{ACM-Reference-Format}
+%\bibliography{Bibliography}
+
+\appendix
+
+\end{document}
+\endinput
+
+
