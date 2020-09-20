@@ -40,11 +40,11 @@
 \section{Introduction}
 
 \begin{table*}
-  \caption{Invalid equivalence classes and representatives of \texttt{DiskChecker} method}
+  \caption{Equivalence classes and representatives of \texttt{DiskChecker} method}
   \label{tab:libraries}
-  \begin{tabular}{l|lp{5cm}|p{5cm}}
+  \begin{tabular}{llp{10cm}p{5cm}}
     \toprule
-    \textbf{Parameter} & \multicolumn{2}{l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
 	\multirow{3}{*}{\texttt{threshold}} & $vEC_1$: & $0 < \texttt{warnThreshold} \leq x < 1$  & $0,5$ \\    
@@ -75,21 +75,34 @@
   \end{tabular}
 \end{table*}
 
+
 \begin{table*}
-  \caption{Invalid equivalence classes and representatives of \texttt{getTotalFreeSpace} method}
+  \caption{Equivalence classes and representatives of \texttt{checkDir} method}
   \label{tab:libraries}
-  \begin{tabular}{l|lp{5cm}|p{5cm}}
+  \begin{tabular}{llp{10cm}p{5cm}}
     \toprule
-    \textbf{Parameter} & \multicolumn{2}{l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
-	\multirow{3}{*}{\texttt{dirs}} & $vEC_1$: & Valid \texttt{List<File>} object inside which there are valid \texttt{File} objects & - \\    
+	\multirow{12}{*}{\texttt{dir}} & $vEC_1$: & Valid \texttt{File} object representing a valid (existent, readable and writeable) directory. & \texttt{new File("/home")} \\    
     
     \\[-1em] 
-    & $iEC_1$: & Null object & \texttt{null} \\ 
+    & $iEC_1$: & Valid \texttt{File} object which not represents a directory, that is it can represent regular file, symbolic link, character device file etc. & \texttt{new File("./regularFile.txt")} \\ 
     
     \\[-1em]
-    & $iEC_2$: & Valid \texttt{List<File>} object inside which there are invalid \texttt{File} objects & - \\
+    & $iEC_2$: & Valid \texttt{File} object representing a not existent and make-able directory. & \texttt{new File("./root")} \\
+    
+    \\[-1em]
+    & $iEC_3$: & Valid \texttt{File} object representing a not existent and not make-able directory. & \texttt{new File("/root/")} \\
+   
+    \\[-1em]
+    & $iEC_4$: & Valid \texttt{File} object representing an existent, readable, not writeable directory. & \texttt{new File("/root")} \\
+    
+ 	\\[-1em]
+    & $iEC_5$: & Valid \texttt{File} object representing an existent, not readable, writeable directory.  & \texttt{new File("/root")} \\    
+    
+	\\[-1em]
+    & $iEC_6$: & A \texttt{null} object. & \texttt{null} \\     
     
     \bottomrule
   \end{tabular}
@@ -97,16 +110,32 @@
 
 
 
+///////////////////////////////////////////////////////////////////////
+
 \begin{table*}
-  \caption{Libraries used in our implementation}
+  \caption{Equivalence classes and representatives of \texttt{getTotalDiskUsage}, \texttt{getTotalFreeSpace}, \texttt{getTotalDiskSpace} methods}
   \label{tab:libraries}
-  \begin{tabular}{l|l|l}
+  \begin{tabular}{llp{10cm}p{5cm}}
     \toprule
-    Name & Description & Link \\
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
+	\multirow{4}{*}{\texttt{dir}} & $vEC_1$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a valid (existent, readable and writeable) directory. & - \\    
     
+    \\[-1em] 
+    & $iEC_1$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a not existent directory. & - \\ 
     
+    \\[-1em] 
+    & $iEC_2$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents an existent, not readable and not writeable directory. & - \\ 
+    
+    \\[-1em] 
+    & $iEC_3$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which not represents a directory, that is it can represent regular file, symbolic link, character device file etc. & - \\ 
+    
+    \\[-1em]
+    & $iEC_4$: & A valid empty \texttt{List<File>} object. & \texttt{new ArrayList<>()} \\
+    
+	\\[-1em]
+    & $iEC_5$: & A \texttt{null} object. & \texttt{null} \\     
     
     \bottomrule
   \end{tabular}
