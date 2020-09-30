@@ -15,7 +15,7 @@
 \acmConference[IWS2 Projects A.A. 2019-2020]{ }{May 31, 2020}{ }
 
 
-
+\newcommand{\abs}[1]{\left|#1\right|}
 
 
 
@@ -123,7 +123,7 @@
 	\multirow{4}{*}{\texttt{dir}} & $vEC_1$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a valid (existent, readable and writeable) directory. & - \\    
     
     \\[-1em] 
-    & $iEC_1$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a not existent directory. & - \\ 
+    & $iEC_1$: & A validgfdg non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a not existent directory. & - \\ 
     
     \\[-1em] 
     & $iEC_2$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents an existent, not readable and not writeable directory. & - \\ 
@@ -140,6 +140,61 @@
     \bottomrule
   \end{tabular}
 \end{table*}
+
+\section{Adequacy Criteria}
+
+\subsection{Statement coverage}
+
+Our test set $T$ is able to cover up to $85$ statements out of a total of $89$, reaching, according to Sonarcloud report, a \textit{statement coverage} equal to \textbf{0,955} (\textbf{95,5\%}).
+
+However we believe that \texttt{DiskChecker} class contains several statements that we can consider as \textbf{unreachable} because they fall on an \textit{infeasible path}, that is a path that would never be reached by our test set $T$ with any type of input data; to be more precise, we believe that  \texttt{setDiskSpaceThreshold(float, float)} method contains up to $4$ unreachable statements. 
+
+Generally, in order to identify unreachable statements, drawing the flow-graph of the developed code and finding out the path that would never be reached is required, however we can consider as unreachable all statements of \texttt{setDiskSpaceThreshold(float, float)} method owing to following reasons:
+
+\begin{enumerate}
+\item \texttt{setDiskSpaceThreshold(float, float)} method is \textbf{never used} in the project, that is it is never called by any other method.
+\item \texttt{setDiskSpaceThreshold(float, float)} method has \textbf{no access modifier} (\textit{package private}) which means, according to Java language specification, that it is only accessible within classes in the same package, therefore that method is not visible by any test set (we are assuming that test code, generally located into \texttt{/test} directory, is always included into a different package respect to application code, which is conversely located into \texttt{/main} directory)
+\end{enumerate}
+
+Therefore, we can conclude by stating that:
+
+\begin{equation} 
+\textbf{Statement Coverage} = \dfrac{\abs{S_c}}{\abs{S_e} - \abs{S_i}} = \dfrac{85}{89-4} = 1 = 100\%
+\end{equation}
+
+Since statement coverage of $T$ is $1$, we can consider $T$ as \textbf{adequate with respect to the statement coverage criterion}.
+
+\subsection{Decision coverage (Branch decision coverage)}
+
+According to \cite{FoundationSoftwareTesting}, a \textit{decision} is considered covered if the flow of control has been diverted to all possible destinations that correspond to this decision, i.e. all outcomes of the decision have been taken. This implies that, for example, the expression in the \texttt{if} or \texttt{while} statement has evaluated to \texttt{true} in some execution and to \texttt{false} in the same or another execution. Note that each \texttt{if} and each \texttt{while} contribute to \textit{one} decision whereas a \texttt{switch} may contribute to more than one.
+
+According to our analysis, \texttt{DiskChecker} class contains 14 possible decisions, therefore $\abs{D_e} = 14$ where $D_e$ is the set of decisions in the program. Our test set $T$ can cover all decision, therefore $\abs{D_c} = 14$, where $D_c$ is the set of decisions covered.
+
+\begin{equation} 
+\textbf{Decision Coverage} = \dfrac{\abs{D_c}}{\abs{D_e} - \abs{D_i}} = \dfrac{14}{14-0} = 1 = 100\%
+\end{equation}
+
+Since decision coverage of $T$ is $1$, we can consider $T$ as \textbf{adequate with respect to the decision coverage criterion}.
+
+\subsection{Condition coverage}
+
+Unlike decision coverage, condition coverage ensures that each simple condition within a compound condition has assumed both values \texttt{true} and \texttt{false}. 
+
+Le be given:
+
+\begin{description}
+\item[$C_e$] the set of simple conditions in the program.
+\item[$C_c$] the set of of simple conditions covered  by our test set $T$.
+\item[$C_i$] the set infeasible simple conditions.
+\end{description}
+
+According to \texttt{JaCoCo} and sonarcloud reports, our test set $T$ covers up to $46$ simple conditions, out of a total of $46$, while $\abs{C_i} = 0$. Therefore we can say that:
+
+\begin{equation} 
+\textbf{Condition Coverage} = \dfrac{\abs{C_c}}{\abs{C_e} - \abs{C_i}} = \dfrac{46}{46-0} = 1 = 100\%
+\end{equation}
+
+Since condition coverage is equal to $1$, our test set $T$ is adequate with respect to the condition coverage criterion. 
 
 
 %https://confluence.atlassian.com/jirakb/general-use-of-affect-version-s-and-fix-version-\% s-838428168.html
