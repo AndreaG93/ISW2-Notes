@@ -10,6 +10,9 @@
 \usepackage{multirow}
 \usepackage{dcolumn}
 \usepackage{booktabs} 
+\usepackage{dirtytalk}
+\usepackage{pifont}  % use /ding{55} for X... /ding{51} for check
+\usepackage{url}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
@@ -35,17 +38,58 @@ component, formatting, style, styling, insert
 
 
 
-\section{Introduction}
+\section{\texttt{org.apache.bookkeeper.util.DiskChecker} analysis}
+
+According to our defect prediction model, \texttt{DiskChecker}\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} class was reported as a \textit{buggy} therefore, since it is likely that it exhibits a defect, we have focused on aforementioned class in order to check if there are any errors in it, attempting to increase the \textit{reliability} of the class, that is the probability of failure free execution of that class under given conditions.
+
+Our testing activity has confirmed our defect prediction because, using our test set $T_1$ which is retrievable from commit \texttt{bdf2fc28d2}\footnote{\url{https://github.com/AndreaG93/ISW2-bookkeeper/tree/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9}}, was reported that up to $5$ unit tests have failed, out of a total of $31$, revealing the presence of several bugs. In following subsection we will describe how we have build test set $T_1$.
+
+\subsection{Equivalence Class Partitioning}
+
+In order to build our test set $T_1$, we have adopted a \textit{black box} testing technique called \textit{equivalence class partitioning}, according to which the domain of possible input data for each input data element is divided
+into \textit{equivalence classes}. An equivalence class is a set of data values that the tester assumes are processed in the same way by the test object \cite{FoundationSoftwareTesting}.
+
+Although equivalence class definition is based on specifications (of requirements) only \cite{FoundationSoftwareTesting}, we have defined our test looking the code too, due to the lack of specification about \texttt{DiskChecker} class.
+
+\subsubsection{\texttt{DiskChecker(float, float)}}
+
+Obliviously, that method represent the constructor of \texttt{DiskChecker} class, which manage directories belonging to ledger entities. 
+
+According to bookkeeper specification\footnote{\url{https://bookkeeper.apache.org/docs/4.7.3/reference/config/}}, is possible to specify, for each ledger directory, a maximum disk space (\texttt{diskUsageThreshold}) which can be used. Moreover is possible to set a warning threshold for disk usage (\texttt{diskUsageWarnThreshold}). Specification establishes 
+
+\vspace{5pt}
+\say{\textit{that valid values should be in between $0$ and $1$ (exclusive).}}
+\vspace{5pt}
+
+For both thresholds, bookkeeper specifications establish a default value, which is equal to $0,95$. In table \ref{tab:DiskCheckerEqClass} all found equivalence classes, both for valid ($vEC$) and invalid input ($iEC$) , are been reported, including respective representative values necessary to build our test set. 
+
+The next step is to combine the values to test cases. From a methodological point of view, to guarantee that all test object reactions are triggered, we have combined representative values using following rules:
+\begin{enumerate}
+\item The representative value of all valid equivalence classes have been combined to test cases (\textit{valid/positive test case}), meaning that all possible combinations of valid equivalence classes will be covered. 
+\item The representative value of an invalid equivalence class have been combined only with representatives of other valid equivalence classes (\textit{invalid/negative test case}).
+\end{enumerate}
+
+Generally, since even a few parameters can generate hundreds of valid test cases, o reduce the number of tests, we have adopted following rules
+
+\begin{enumerate}
+\item Test cases including boundary values combinations are preferred.
+\item Every representative of an equivalence class appears in at least one test case.
+\item Representatives of invalid equivalence classes should not be combined with representatives of other invalid equivalence classes.
+\end{enumerate}
+
+Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by combining the representatives of the valid equivalence classes) and $1 + 3 = 4$ negative test cases
+(by separately testing representatives of every invalid class). Since test cases belonging to both $iEC_3$ of  \texttt{threshold} parameter and $iEC_1$ of \texttt{warnThreshold} overlap, in total $4$ test cases result from the $6$ equivalence classes.
 
 \begin{table*}
   \caption{Equivalence classes and representatives of \texttt{DiskChecker} method}
-  \label{tab:libraries}
-  \begin{tabular}{llp{10cm}p{5cm}}
+  \label{tab:DiskCheckerEqClass}
+  \centering
+  \begin{tabular}{llp{6.5cm}p{8cm}}
     \toprule
-    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representative} \\
     \midrule
     
-	\multirow{3}{*}{\texttt{threshold}} & $vEC_1$: & $0 < \texttt{warnThreshold} \leq x < 1$  & $0,5$ \\    
+	\multirow{3}{*}{\texttt{threshold}} & $vEC_1$: & $0 < \texttt{warnThreshold} \leq x < 1$  & $0.5$ \\    
     
     \\[-1em] 
     & $iEC_1$: & $x \leq 0$ & $0$ \\ 
@@ -54,57 +98,174 @@ component, formatting, style, styling, insert
     & $iEC_2$: & $x \geq 1$ & $1$ \\
     
     \\[-1em]
-    & $iEC_3$: & $0 < x < \texttt{warnThreshold} < 1$ & $1$ \\
+    & $iEC_3$: & $0 < x < \texttt{warnThreshold} < 1$ & $0.5$ (while \texttt{warnThreshold} is $0.6$) \\
     
     \\[-1em] \hline 
 	   
-    \multirow{3}{*}{\texttt{warnThreshold}} & $vEC_1$: & $0 < x \leq \texttt{threshold} < 1 $  & $0,5$ \\    
+    \multirow{3}{*}{\texttt{warnThreshold}} & $vEC_1$: & $x \leq \texttt{threshold}$  & $0.5$ (while \texttt{threshold} is $0.5$) \\    
     
     \\[-1em] 
-    & $iEC_1$: & $x \leq 0$ & $0$ \\ 
-    
-	\\[-1em] 
-    & $iEC_2$: & $1 > x > \texttt{threshold} > 0$ & $0$ \\  
-    
-    \\[-1em] 
-    & $iEC_3$: & $x \geq 1$ & $1$ \\    
+    & $iEC_1$: & $x > \texttt{threshold}$ & $0.6$ (while \texttt{threshold} is $0.5$) \\  
     
     \bottomrule
   \end{tabular}
 \end{table*}
 
+\begin{table*}
+  \caption{Test cases of \texttt{DiskChecker} method}
+  \label{tab:DiskCheckerTestCases}
+  \centering
+  \begin{tabular}{cccccc}
+    \toprule
+    \textbf{Test Case} & \multicolumn{2}{c}{\textbf{Parameter}} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
+    & \texttt{threshold} & \texttt{warnThreshold} & & &\\
+    \midrule
+    
+	$\textit{Valid}_1$ & $0.95$ & $0.95$ & No Exception & No Exception & \ding{51} \\
+	
+	$\textit{Invalid}_1$ & $0$ & $0.5$ & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_2$ & $1$ & $0.5$ & Exception & Exception & \ding{51} \\
+    
+	$\textit{Invalid}_3$ & $0.5$ & $0.6$ & Exception & Exception & \ding{51} \\
+	
+    \bottomrule
+  \end{tabular}
+\end{table*}
 
-\begin{table}
+\subsubsection{\texttt{checkDir(File dir)}}
+
+\begin{table*}
   \caption{Equivalence classes and representatives of \texttt{checkDir} method}
-  \label{tab:libraries}
-  \begin{tabular}{llp{10cm}p{5cm}}
+  \label{tab:checkDirEqClass}
+  \centering
+  \begin{tabular}{llp{6.5cm}p{8cm}}
     \toprule
     \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
-	\multirow{12}{*}{\texttt{dir}} & $vEC_1$: & Valid \texttt{File} object representing a valid (existent, readable and writeable) directory. & \texttt{new File("/home")} \\    
+	\multirow{15}{*}{\texttt{dir}} & $vEC_1$: & Valid \texttt{File} object representing a valid directory (existent, readable and writeable). & \texttt{IOUtils.createTempDir("directoryFile", "test")} \\    
     
     \\[-1em] 
-    & $iEC_1$: & Valid \texttt{File} object which not represents a directory, that is it can represent regular file, symbolic link, character device file etc. & \texttt{new File("./regularFile.txt")} \\ 
+    & $vEC_2$: & Valid \texttt{File} object representing a not existent, but makable, directory. & \texttt{new File("./makeMultiple/dir/path")} \\ 
+    
+    \\[-1em] 
+    & $iEC_1$: & Valid \texttt{File} object which does not represent a directory, that is it can be a regular file, a symbolic link, a character device file etc. & \texttt{new File("/dev/zero")} \\ 
     
     \\[-1em]
-    & $iEC_2$: & Valid \texttt{File} object representing a not existent and make-able directory. & \texttt{new File("./root")} \\
-    
-    \\[-1em]
-    & $iEC_3$: & Valid \texttt{File} object representing a not existent and not make-able directory. & \texttt{new File("/root/")} \\
+    & $iEC_2$: & Valid \texttt{File} object representing a non-existent and non-makable directory. & \texttt{new File("/root/notMakable")} \\
    
     \\[-1em]
-    & $iEC_4$: & Valid \texttt{File} object representing an existent, readable, not writeable directory. & \texttt{new File("/root")} \\
+    & $iEC_3$: & Valid \texttt{File} object representing an existent, not readable directory. & \texttt{new File("/root")} \\
     
- 	\\[-1em]
-    & $iEC_5$: & Valid \texttt{File} object representing an existent, not readable, writeable directory.  & \texttt{new File("/root")} \\    
+    \\[-1em]
+    & $iEC_4$: & Valid \texttt{File} object representing an existent, not writeable directory. & \texttt{new File("/home")} \\    
+    
+    \\[-1em]
+    & $iEC_5$: & Valid \texttt{File} object representing an invalid directory (from file system point of view because, for example, it contains forbidden characters).  & \texttt{new File("$\setminus$u0000")} \\       
     
 	\\[-1em]
     & $iEC_6$: & A \texttt{null} object. & \texttt{null} \\     
     
     \bottomrule
   \end{tabular}
-\end{table}
+\end{table*}
+
+\begin{table*}
+  \caption{Test cases of \texttt{checkDir} method}
+  \label{tab:checkDirTestCases}
+  \centering
+  \begin{tabular}{cccccc}
+    \toprule
+    \textbf{Test Case} & \textbf{Parameter} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
+    & \texttt{dir} & & & &\\
+    \midrule
+    
+	$\textit{Valid}_1$ & \texttt{IOUtils.createTempDir("directoryFile", "test")}  & No Exception & No Exception & \ding{51} \\
+
+	$\textit{Valid}_2$ & \texttt{new File("./makeMultiple/dir/path")}  & No Exception & No Exception & \ding{51} \\
+	
+	$\textit{Invalid}_1$ & \texttt{new File("/dev/zero")}  & Exception & Exception & \ding{51} \\
+
+	$\textit{Invalid}_2$ & \texttt{new File("/root/notMakable")}  & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_3$ & \texttt{new File("/root")}  & Exception & Exception & \ding{51} \\
+
+	$\textit{Invalid}_4$ & \texttt{new File("/home")}  & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_5$ & \texttt{new File("$\setminus$u0000")}  & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_6$ & \texttt{null}  & Exception & Exception & \ding{51} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\subsubsection{\texttt{getTotalDiskSpace(List<File> dirs)}}
+
+\begin{table*}
+  \caption{Equivalence classes and representatives of  \texttt{getTotalFreeSpace} and \texttt{getTotalDiskSpace} methods}
+  \label{tab:libraries}
+  \begin{tabular}{llp{10cm}p{5cm}}
+    \toprule
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\multirow{4}{*}{\texttt{dir}} & $vEC_1$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a valid (existent and readable) directory. & \textit{See the code}
+    
+    \\[-1em] 
+    & $vEC_2$: & A valid empty \texttt{List<File>} object. & \texttt{new ArrayList<>()}\\ 
+    
+    \\[-1em] 
+    & $iEC_1$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object does not represent a directory, that is it can represent regular file, symbolic link, character device file etc. & \textit{See the code} \\
+    
+	\\[-1em] 
+    & $iEC_2$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object represent a not existent directory. & \textit{See the code} \\
+        
+    \\[-1em] 
+    & $iEC_3$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object represent an existent but not readable directory. & \textit{See the code} \\
+        
+    \\[-1em] 
+    & $iEC_3$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object represent an invalid directory (from file system point of view). & \textit{See the code} \\
+        
+    \\[-1em] 
+    & $iEC_3$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object is null. & \textit{See the code} \\
+              
+	\\[-1em]
+    & $iEC_5$: & A \texttt{null} object. & \texttt{null} \\     
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+
+
+
+
+
+
+
+
+
+
+
+
+ JaCoCo \footnote{\url{https://github.com/jacoco/jacoco}} 
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
 
 
 
@@ -191,6 +352,14 @@ According to \texttt{JaCoCo} and sonarcloud reports, our test set $T$ covers up 
 \end{equation}
 
 Since condition coverage is equal to $1$, our test set $T$ is adequate with respect to the condition coverage criterion. 
+
+
+\section{Mutation Analysis}
+
+%https://github.com/AndreaG93/ISW2-bookkeeper/commit/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9
+
+According to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation coverage equal to 63, con 46 
+
 
 
 \bibliographystyle{IEEEtran}
