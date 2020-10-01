@@ -1,41 +1,39 @@
-\documentclass[sigchi]{acmart}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
 \usepackage{multirow}
-\usepackage{algorithm}
 \usepackage{dcolumn}
-\usepackage[noend]{algpseudocode}
-
-\AtBeginDocument{%
-  \providecommand\BibTeX{{%
-    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
-
-\settopmatter{printacmref=false, printccs=false, printfolios =false}
-\setcopyright{none} 
-\renewcommand\footnotetextcopyrightpermission[1]{}
-
-\acmConference[IWS2 Projects A.A. 2019-2020]{ }{May 31, 2020}{ }
-
+\usepackage{booktabs} 
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \newcommand{\abs}[1]{\left|#1\right|}
-
-
-
+ 
 \begin{document}
 
-\title{Deliverable 2 Report}
+\title{IWS2 Projects A.A. 2019-2020}
 
-\author{Andrea Graziani}
-\email{andrea.graziani93@outlook.it}
-\affiliation{%
-  \institution{Università Degli Studi di Roma Tor Vergata}
-  \city{Rome}
-  \state{Italy}
+\author{\IEEEauthorblockN{Andrea Graziani}
+\IEEEauthorblockA{\textit{Università degli Studi di Roma "Tor Vergata"}\\
+\textit{Laurea Magistrale in Ingegneria Informatica} \\
+Rome, Italy \\
+andrea.graziani93@outlook.it}
 }
 
-\renewcommand{\shortauthors}{Andrea Graziani (0273395)}
-
-
-\keywords{Labeling Defective Classes}
 \maketitle
+
+\begin{IEEEkeywords}
+component, formatting, style, styling, insert
+\end{IEEEkeywords}
+
+
+
 
 \section{Introduction}
 
@@ -76,7 +74,7 @@
 \end{table*}
 
 
-\begin{table*}
+\begin{table}
   \caption{Equivalence classes and representatives of \texttt{checkDir} method}
   \label{tab:libraries}
   \begin{tabular}{llp{10cm}p{5cm}}
@@ -106,11 +104,9 @@
     
     \bottomrule
   \end{tabular}
-\end{table*}
+\end{table}
 
 
-
-///////////////////////////////////////////////////////////////////////
 
 \begin{table*}
   \caption{Equivalence classes and representatives of \texttt{getTotalDiskUsage}, \texttt{getTotalFreeSpace}, \texttt{getTotalDiskSpace} methods}
@@ -197,14 +193,11 @@ According to \texttt{JaCoCo} and sonarcloud reports, our test set $T$ covers up 
 Since condition coverage is equal to $1$, our test set $T$ is adequate with respect to the condition coverage criterion. 
 
 
-%https://confluence.atlassian.com/jirakb/general-use-of-affect-version-s-and-fix-version-\% s-838428168.html
+\bibliographystyle{IEEEtran}
+\bibliography{Bib}
 
-%\bibliographystyle{ACM-Reference-Format}
-%\bibliography{Bibliography}
-
-\appendix
 
 \end{document}
-\endinput
+
 
 
