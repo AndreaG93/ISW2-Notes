@@ -10,7 +10,6 @@
 \usepackage{multirow}
 \usepackage{dcolumn}
 \usepackage{booktabs} 
-\usepackage{dirtytalk}
 \usepackage{pifont}  % use /ding{55} for X... /ding{51} for check
 \usepackage{url}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -58,7 +57,7 @@ Obliviously, that method represent the constructor of \texttt{DiskChecker} class
 According to bookkeeper specification\footnote{\url{https://bookkeeper.apache.org/docs/4.7.3/reference/config/}}, is possible to specify, for each ledger directory, a maximum disk space (\texttt{diskUsageThreshold}) which can be used. Moreover is possible to set a warning threshold for disk usage (\texttt{diskUsageWarnThreshold}). Specification establishes 
 
 \vspace{5pt}
-\say{\textit{that valid values should be in between $0$ and $1$ (exclusive).}}
+\textit{that valid values should be in between $0$ and $1$ (exclusive).}
 \vspace{5pt}
 
 For both thresholds, bookkeeper specifications establish a default value, which is equal to $0,95$. In table \ref{tab:DiskCheckerEqClass} all found equivalence classes, both for valid ($vEC$) and invalid input ($iEC$) , are been reported, including respective representative values necessary to build our test set. 
@@ -359,6 +358,34 @@ Since condition coverage is equal to $1$, our test set $T$ is adequate with resp
 %https://github.com/AndreaG93/ISW2-bookkeeper/commit/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9
 
 According to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation coverage equal to 63, con 46 
+
+
+
+\section{dasdas}
+
+EnsemblePlacementPolicy encapsulates the algorithm that bookkeeper client uses to select a number of bookies from the cluster as an ensemble for storing data. The algorithm is typically based on the data input as well as the network topology properties.
+
+\url{https://bookkeeper.apache.org/distributedlog/docs/latest/user_guide/implementation/storage.html}
+
+
+
+Bookies are individual BookKeeper servers that handle ledgers (more specifically, fragments of ledgers). Bookies function as part of an ensemble.
+
+A bookie is an individual BookKeeper storage server. Individual bookies store fragments of ledgers, not entire ledgers (for the sake of performance). For any given ledger L, an ensemble is the group of bookies storing the entries in L.
+
+
+Ensemble size	E	The number of nodes the ledger is stored on
+Write quorum size	Qw	The number of nodes each entry is written to. In effect, the max replication for the entry.
+Ack quorum size	Qa	The number of nodes an entry must be acknowledged on. In effect, the minimum replication for the entry.
+
+Ledgers are the basic building block of BookKeeper and the level at which BookKeeper makes its persistent storage guarantees.
+
+The @NotNull Annotation is, actually, an explicit contract declaring the following:
+
+A method should not return null.
+A variable (like fields, local variables, and parameters) cannot should not hold null value.
+
+E >= Qw >= Qa
 
 
 
