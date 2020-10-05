@@ -1,4 +1,4 @@
-\documentclass[conference]{IEEEtran}
+\documentclass[conference, onecolumn]{IEEEtran}
 \IEEEoverridecommandlockouts
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
@@ -6,12 +6,23 @@
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
+\usepackage{listings}
 \usepackage{xcolor}
 \usepackage{multirow}
 \usepackage{dcolumn}
 \usepackage{booktabs} 
 \usepackage{pifont}  % use /ding{55} for X... /ding{51} for check
 \usepackage{url}
+\usepackage{hyperref}
+
+\lstset{
+language=Java,
+basicstyle=\small\ttfamily,			
+keywordstyle=\color{blue},
+commentstyle=\color{gray},			
+stringstyle=\color{black},					
+}
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
@@ -38,6 +49,8 @@ component, formatting, style, styling, insert
 
 
 \section{\texttt{org.apache.bookkeeper.util.DiskChecker} analysis}
+
+\url{www.google.it}
 
 According to our defect prediction model, \texttt{DiskChecker}\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} class was reported as a \textit{buggy} therefore, since it is likely that it exhibits a defect, we have focused on aforementioned class in order to check if there are any errors in it, attempting to increase the \textit{reliability} of the class, that is the probability of failure free execution of that class under given conditions.
 
@@ -297,9 +310,9 @@ Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by c
   \end{tabular}
 \end{table*}
 
-\section{Adequacy Criteria}
+\subsection{Adequacy Criteria}
 
-\subsection{Statement coverage}
+\subsubsection{Statement coverage}
 
 Our test set $T$ is able to cover up to $85$ statements out of a total of $89$, reaching, according to Sonarcloud report, a \textit{statement coverage} equal to \textbf{0,955} (\textbf{95,5\%}).
 
@@ -320,7 +333,7 @@ Therefore, we can conclude by stating that:
 
 Since statement coverage of $T$ is $1$, we can consider $T$ as \textbf{adequate with respect to the statement coverage criterion}.
 
-\subsection{Decision coverage (Branch decision coverage)}
+\subsubsection{Decision coverage (Branch decision coverage)}
 
 According to \cite{FoundationSoftwareTesting}, a \textit{decision} is considered covered if the flow of control has been diverted to all possible destinations that correspond to this decision, i.e. all outcomes of the decision have been taken. This implies that, for example, the expression in the \texttt{if} or \texttt{while} statement has evaluated to \texttt{true} in some execution and to \texttt{false} in the same or another execution. Note that each \texttt{if} and each \texttt{while} contribute to \textit{one} decision whereas a \texttt{switch} may contribute to more than one.
 
@@ -332,7 +345,7 @@ According to our analysis, \texttt{DiskChecker} class contains 14 possible decis
 
 Since decision coverage of $T$ is $1$, we can consider $T$ as \textbf{adequate with respect to the decision coverage criterion}.
 
-\subsection{Condition coverage}
+\subsubsection{Condition coverage}
 
 Unlike decision coverage, condition coverage ensures that each simple condition within a compound condition has assumed both values \texttt{true} and \texttt{false}. 
 
@@ -353,7 +366,7 @@ According to \texttt{JaCoCo} and sonarcloud reports, our test set $T$ covers up 
 Since condition coverage is equal to $1$, our test set $T$ is adequate with respect to the condition coverage criterion. 
 
 
-\section{Mutation Analysis}
+\subsection{Mutation Analysis}
 
 %https://github.com/AndreaG93/ISW2-bookkeeper/commit/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9
 
@@ -361,31 +374,164 @@ According to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation 
 
 
 
-\section{dasdas}
+\section{\texttt{org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy} analysis}
 
-EnsemblePlacementPolicy encapsulates the algorithm that bookkeeper client uses to select a number of bookies from the cluster as an ensemble for storing data. The algorithm is typically based on the data input as well as the network topology properties.
+What is meant by \texttt{DefaultEnsemblePlacementPolicy}? What are its responsibilities?
 
-\url{https://bookkeeper.apache.org/distributedlog/docs/latest/user_guide/implementation/storage.html}
+According to \texttt{bookkeeper} specifications\cite{BookKeeperArchitecture}, an \textbf{ensemble} represents a group of \textbf{bookies} storing \textbf{entries}. To be more precise, according to \texttt{bookkeeper}'s nomenclature, a \textbf{bookie} is an individual storage server while \textbf{entries} represent stored data, therefore an ensemble of size $E$ represents simply a group of storage servers.
+
+The aim of this design is to guarantee \textbf{consistency} in an ensemble of bookies of all stored data exploiting a \textbf{quorum-based replicated-write} protocol. As known, to support replicated writes at multiple replicas of a file, a client must first contact at least half the servers plus one (a majority) and get them to agree to do the update\cite{Tanenbaum}. Technically, in order to modify a file, a client needs to assemble the so called \textbf{write quorum}, that is an arbitrary collection of servers which must be more than the half of all available servers\cite{Tanenbaum}. Therefore, using \texttt{bookkeeper}'s nomenclature, the size of write quorum $Q_w$ represents the number of bookies where each entry is written. 
+
+According to \texttt{bookkeeper} protocol\cite{BookKeeperProtocol}, the following invariant must hold:
+
+\begin{equation}
+E \geqslant Q_w \geqslant Q_a
+\end{equation}
+
+In other word, the ensemble size $E$ must be larger than the write quorum size $Q_w$, which must in turn be larger than the so called \textbf{ack quorum size} $Q_a$, which represents, instead, the number of nodes an entry must be acknowledged on. 
+
+How are ensemble built in order to be compliant to above specifications? 
+
+Is very important to precise that \texttt{bookkeeper} uses several algorithms to selects a number of bookies from a cluster as an ensemble, some of which are capable to exploit several network topology proprieties too. According to \texttt{bookkeeper} design, implementations of these algorithm must be compliant to \texttt{EnsemblePlacementPolicy} interface \cite{EnsemblePlacementPolicy}, in other words any implementation must respect the \textit{contract} establish by \texttt{EnsemblePlacementPolicy} interface, which covers aspects related to initialization and bookie selection for data placement and reads\cite{EnsemblePlacementPolicy}. 
+
+Currently there are 3 implementations available by default. They are:
+\begin{itemize}
+\item \texttt{DefaultEnsemblePlacementPolicy}
+\item \texttt{RackawareEnsemblePlacementPolicy}
+\item \texttt{RegionAwareEnsemblePlacementPolicy}
+\end{itemize}
+
+The subject of our analysis is the \texttt{DefaultEnsemblePlacementPolicy} class, which encapsulates the simplest algorithm for bookie selection for ensemble creation because it, simply, picks bookies randomly in order to build an ensemble.
+
+According to our defect prediction model, \texttt{DefaultEnsemblePlacementPolicy}\footnote{\texttt{org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy}} class was reported as a \textit{buggy} therefore, since it is likely that it exhibits a defect, we have focused on aforementioned class in order to check if there are any errors in it, attempting to increase the \textit{reliability} of the class, that is the probability of failure free execution of that class under given conditions.
+
+\subsection{Equivalence Class Partitioning}
+
+\subsubsection{\texttt{onClusterChanged}}
+
+\begin{lstlisting}[frame=lines, caption={\texttt{onClusterChanged} method signature.}]
+Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBookies, Set<BookieSocketAddress> readOnlyBookies)
+\end{lstlisting}
 
 
 
-Bookies are individual BookKeeper servers that handle ledgers (more specifically, fragments of ledgers). Bookies function as part of an ensemble.
 
-A bookie is an individual BookKeeper storage server. Individual bookies store fragments of ledgers, not entire ledgers (for the sake of performance). For any given ledger L, an ensemble is the group of bookies storing the entries in L.
+\begin{table}[h!]
+  \caption{Equivalence classes and representatives of \texttt{onClusterChanged} method}
+  \centering
+  \begin{tabular}{llp{7cm}p{7cm}}
+  
+    \toprule
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+    \\
+	\multirow{7}{*}{\texttt{writableBookies}} & $vEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing valid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
+    
+    \\
+    & $iEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing \texttt{null} items or invalid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
+    
+    \\
+    & $iEC_2$: & \texttt{null} object & \texttt{null} \\    
+    
+    \hline
+    
+    \\
+    \multirow{7}{*}{\texttt{readOnlyBookies}} & $vEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing valid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
+   
+     \\
+    & $iEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing \texttt{null} items or invalid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
+    
+    \\
+    & $iEC_2$: & \texttt{null} object & \texttt{null} \\    
+    
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[h!]
+  \caption{Test cases of \texttt{onClusterChanged} method}
+  \centering
+  \resizebox{\columnwidth}{!}{
+  \begin{tabular}{cp{5cm}p{5cm}p{5.5cm}p{5.5cm}c}
+    \toprule
+    \textbf{Test Case} & \multicolumn{2}{c}{\textbf{Parameter}} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
+    & \texttt{writableBookies} & \texttt{readOnlyBookies} & & &\\
+    \midrule
+    
+	$\textit{Valid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$).  & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$). & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
+	
+	$\textit{Valid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
+	
+	$\textit{Valid}_3$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object (\texttt{knownBookies} field of a \texttt{DefaultEnsemblePlacementPolicy} instance have size equal to   $5$)  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & \ding{51} \\\\
+	
+	$\textit{Invalid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\
+	
+	$\textit{Invalid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\	
+	
+	$\textit{Invalid}_3$ & \texttt{null} & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
+	
+	$\textit{Invalid}_4$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{null} & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
+		
+	
+    \bottomrule
+  \end{tabular}}
+\end{table}
 
 
-Ensemble size	E	The number of nodes the ledger is stored on
-Write quorum size	Qw	The number of nodes each entry is written to. In effect, the max replication for the entry.
-Ack quorum size	Qa	The number of nodes an entry must be acknowledged on. In effect, the minimum replication for the entry.
+\subsubsection{\texttt{newEnsemble}}
 
-Ledgers are the basic building block of BookKeeper and the level at which BookKeeper makes its persistent storage guarantees.
+
+
 
 The @NotNull Annotation is, actually, an explicit contract declaring the following:
 
 A method should not return null.
 A variable (like fields, local variables, and parameters) cannot should not hold null value.
 
-E >= Qw >= Qa
+
+\subsubsection{\texttt{replaceBookie}}
+
+
+
+
+\subsubsection{\texttt{updateBookieInfo}}
+
+According to \texttt{DefaultEnsemblePlacementPolicy} interface's documentation\cite{EnsemblePlacementPolicy}, \texttt{updateBookieInfo} is used to update bookie info details taking only one input parameter, a \texttt{Map<BookieSocketAddress, BookieInfo>} object. 
+Method signature is the following:
+
+\begin{lstlisting}[frame=lines,caption={\texttt{onClusterChanged} method signature.}]
+public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)
+\end{lstlisting}
+
+\begin{table}[h!]
+  \caption{Equivalence classes and representatives of \texttt{updateBookieInfo} method}
+  \centering
+  \resizebox{\columnwidth}{!}{
+  \begin{tabular}{cp{5cm}p{5cm}p{5.5cm}p{5.5cm}c}
+    \toprule
+    \textbf{Test Case} & \multicolumn{2}{c}{\textbf{Parameter}} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
+    & \texttt{writableBookies} & \texttt{readOnlyBookies} & & &\\
+    \midrule
+    
+	$\textit{Valid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$).  & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$). & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
+	
+	$\textit{Valid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
+	
+	$\textit{Valid}_3$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object (\texttt{knownBookies} field of a \texttt{DefaultEnsemblePlacementPolicy} instance have size equal to   $5$)  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & \ding{51} \\\\
+	
+	$\textit{Invalid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\
+	
+	$\textit{Invalid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\	
+	
+	$\textit{Invalid}_3$ & \texttt{null} & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
+	
+	$\textit{Invalid}_4$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{null} & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
+		
+	
+    \bottomrule
+  \end{tabular}}
+\end{table}
 
 
 
