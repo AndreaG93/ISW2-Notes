@@ -14,6 +14,7 @@
 \usepackage{pifont}  % use /ding{55} for X... /ding{51} for check
 \usepackage{url}
 \usepackage{hyperref}
+\usepackage{adjustbox}
 
 \lstset{
 language=Java,
@@ -26,8 +27,30 @@ stringstyle=\color{black},
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
+% My 'newcommand' for modulo function...
 \newcommand{\abs}[1]{\left|#1\right|}
- 
+
+
+% My 'newcommand' for standard table creation...
+\newcommand{\AndreaTable}[3]{\begin{table}[h!]
+\caption{#1}
+\centering
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{#2}
+\toprule
+#3
+\bottomrule
+\end{tabular}}
+\end{table}
+}
+
+% My 'newcommand' for standard table creation...
+\newcommand{\equivalenceClassesTable}[2]{
+\AndreaTable{#1}{llm{8cm}m{8cm}}{#2}
+}
+
+\newcommand{\itemt}[1]{\item[\texttt{#1}]}
+
 \begin{document}
 
 \title{IWS2 Projects A.A. 2019-2020}
@@ -479,9 +502,44 @@ Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBooki
 \end{table}
 
 
-\subsubsection{\texttt{newEnsemble}}
+\subsubsection{\texttt{public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)}}
+
+fdsfdsfsd
+fsdfsdfds
 
 
+\begin{lstlisting}[frame=lines,caption={\texttt{onClusterChanged} method signature.},basicstyle=\fontsize{8}{9}\selectfont]
+public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)
+\end{lstlisting}
+
+According to \texttt{bookkeeper} documentation, \texttt{newEnsemble} method is used to build an ensemble made up \texttt{ensembleSize} bookies which takes up to $5$ parameters:
+\begin{tabular}{ll}
+  
+
+\texttt{ensembleSize} & Ensemble Size \\
+\texttt{writeQuorumSize} & Write Quorum Size \\
+\texttt{ackQuorumSize} & the value of ackQuorumSize (added since 4.5) \\
+\texttt{customMetadata} & the value of customMetadata. \\
+\texttt{excludeBookies} & Bookies that should not be considered as targets. \\
+
+\end{tabular}
+
+
+
+\begin{description}
+\item[\texttt{ensembleSize}] Ensemble Size
+\itemt{ensembleSize} Ensemble Size
+ 
+\end{description}
+
+
+ According to method signature, if  not enough bookies are available to build an ensemble of size \texttt{ensembleSize}, a \texttt{BKNotEnoughBookiesException} is thrown.
+
+. Morevoer, 
+
+Choose numBookies bookies for ensemble. If the count is more than the number of available nodes, BKException.BKNotEnoughBookiesException is thrown.
+
+The implementation should respect to the replace settings. The size of the returned bookie list should be equal to the provide ensembleSize. 
 
 
 The @NotNull Annotation is, actually, an explicit contract declaring the following:
@@ -490,9 +548,20 @@ A method should not return null.
 A variable (like fields, local variables, and parameters) cannot should not hold null value.
 
 
+
+
+
+
 \subsubsection{\texttt{replaceBookie}}
 
+\equivalenceClassesTable{Equivalence classes and representatives of \texttt{updateBookieInfo} method}{
+  
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
 
+
+}
 
 
 \subsubsection{\texttt{updateBookieInfo}}
@@ -504,34 +573,68 @@ Method signature is the following:
 public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)
 \end{lstlisting}
 
-\begin{table}[h!]
-  \caption{Equivalence classes and representatives of \texttt{updateBookieInfo} method}
-  \centering
-  \resizebox{\columnwidth}{!}{
-  \begin{tabular}{cp{5cm}p{5cm}p{5.5cm}p{5.5cm}c}
-    \toprule
-    \textbf{Test Case} & \multicolumn{2}{c}{\textbf{Parameter}} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
-    & \texttt{writableBookies} & \texttt{readOnlyBookies} & & &\\
+\equivalenceClassesTable{Equivalence classes and representatives of \texttt{updateBookieInfo} method}{
+  
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
-	$\textit{Valid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$).  & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$). & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
+    \\
+	\multirow{25}{*}{\texttt{bookieInfoMap}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
 	
-	$\textit{Valid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
+	\begin{enumerate}
+    \item \texttt{port} field is $ \geqslant 0$;
+    \item \texttt{hostname} field is not \texttt{null};
+    \end{enumerate}
+    
+    Moreover, for all \texttt{BookieInfo} object is true that:
+    
+    \begin{enumerate}
+    \item \texttt{totalDiskSpace} field is $ \geqslant 0$;
+    \item \texttt{freeDiskSpace} field is $ \geqslant 0$;
+    \item \texttt{freeDiskSpace} $\leqslant$ \texttt{totalDiskSpace};
+    \end{enumerate}
 	
-	$\textit{Valid}_3$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object (\texttt{knownBookies} field of a \texttt{DefaultEnsemblePlacementPolicy} instance have size equal to   $5$)  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & \ding{51} \\\\
+	& \textit{(see the code)} \\    
+    
+    \\
+    & $iEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) in which at least one invalid \texttt{(BookieSocketAddress, BookieInfo)} pair object is present; for example, there is one pair in the form \texttt{(BookieSocketAddress, null)}, \texttt{(null, BookieInfo)} or \texttt{(null, null)}. & \textit{(see the code)} \\    
+    
+   \\
+    & $iEC_2$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) in which at least one \textbf{malformed} \texttt{(BookieSocketAddress, BookieInfo)} pair object is present. \newline In particular, there is at least one \texttt{BookieSocketAddress} in which:
+    \begin{enumerate}
+    \item \texttt{port} field is $ < 0$.
+    \item \texttt{hostname} field is \texttt{null}.
+    \end{enumerate}
+    
+    Moreover, there is at least one \texttt{BookieInfo} in which:
+    
+    \begin{enumerate}
+    \item \texttt{totalDiskSpace} field is $ < 0$
+    \item \texttt{freeDiskSpace} field is $ < 0$
+     \item \texttt{freeDiskSpace} $>$ \texttt{totalDiskSpace};
+    \end{enumerate}
+    
+    & \textit{(see the code)} \\     
+    
+    \\
+    & $iEC_3$: & \texttt{null} object. & \texttt{null} \\    
+}
+
+\AndreaTable{Test cases of \texttt{updateBookieInfo} method}{cp{8cm}p{5.5cm}p{5.5cm}c}{
+
+\textbf{Test Case} & \textbf{Parameter} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
+    & \texttt{bookieInfoMap} & & &\\
+    \midrule
+    
+	$\textit{Valid}_1$ & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $= 0$). & Any Exception & Any Exception & \ding{51} \\\\
 	
-	$\textit{Invalid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\
-	
-	$\textit{Invalid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\	
-	
-	$\textit{Invalid}_3$ & \texttt{null} & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
-	
-	$\textit{Invalid}_4$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{null} & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
-		
-	
-    \bottomrule
-  \end{tabular}}
-\end{table}
+	$\textit{Valid}_2$ & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. & Any Exception & Any Exception & \ding{51} \\\\
+
+   $\textit{Valid}_2$ & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs.\newline The \texttt{isWeighted} field of \texttt{DefaultEnsemblePlacementPolicy} object is set to \texttt{false} & Any Exception & Exception & \ding{55} \\\\
+
+
+
+}
 
 
 
