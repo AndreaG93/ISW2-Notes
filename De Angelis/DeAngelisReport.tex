@@ -1,8 +1,6 @@
-\documentclass[conference, onecolumn]{IEEEtran}
-\IEEEoverridecommandlockouts
+\documentclass[sigconf]{acmart}
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
-\usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsmath,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
@@ -24,24 +22,24 @@ commentstyle=\color{gray},
 stringstyle=\color{black},					
 }
 
-\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
 
 % My 'newcommand' for modulo function...
 \newcommand{\abs}[1]{\left|#1\right|}
 
 
 % My 'newcommand' for standard table creation...
-\newcommand{\AndreaTable}[3]{\begin{table}[h!]
+\newcommand{\AndreaTable}[3]{\begin{table*}[h!]
 \caption{#1}
 \centering
-\resizebox{\columnwidth}{!}{
 \begin{tabular}{#2}
 \toprule
 #3
 \bottomrule
-\end{tabular}}
-\end{table}
+\end{tabular}
+\end{table*}
 }
 
 % My 'newcommand' for standard table creation...
@@ -49,68 +47,129 @@ stringstyle=\color{black},
 \AndreaTable{#1}{llm{8cm}m{8cm}}{#2}
 }
 
-\newcommand{\itemt}[1]{\item[\texttt{#1}]}
+
+\settopmatter{printacmref=false, printccs=false, printfolios =false}
+\setcopyright{none} 
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\acmConference[ISW2 Project A.A. 2019-2020]{ }{September 1, 2020}{ }
 
 \begin{document}
 
-\title{IWS2 Projects A.A. 2019-2020}
+\title{ISW2 Project A.A. 2019-2020}
 
-\author{\IEEEauthorblockN{Andrea Graziani}
-\IEEEauthorblockA{\textit{Università degli Studi di Roma "Tor Vergata"}\\
-\textit{Laurea Magistrale in Ingegneria Informatica} \\
-Rome, Italy \\
-andrea.graziani93@outlook.it}
+\author{Andrea Graziani ($0273395$)}
+\email{andrea.graziani93@outlook.it}
+\affiliation{
+  \institution{Università degli Studi di Roma "Tor Vergata"}
+  \city{Rome}
+  \country{Italy}
 }
 
+\keywords{Testing, Equivalence Class Partitioning, Boundary Value Analysis, Mutation Testing}
 \maketitle
 
-\begin{IEEEkeywords}
-component, formatting, style, styling, insert
-\end{IEEEkeywords}
+\section{Introduction}
 
+In this report we will describe all results and issues about the utilization of several \textit{testing techniques} involving following open source projects:
 
+\begin{description}
+\item[Apache BookKeeper\texttrademark]Which is a scalable, fault tolerant and low latency storage service\footnote{\url{https://github.com/apache/bookkeeper}}.
+\item[Apache OpenJPA\texttrademark]An implementation of the Java Persistence API specification\footnote{\url{https://github.com/apache/openjpa}}. 
+\end{description}
 
+To be more precise, the aim of this report is to analyse $2$ classes of each aforementioned project, attempting both to find if there are any errors in it and to increase our confidence in the correct functioning of the \textbf{software under test} (\textbf{SUT}), although the completeness of our testing does not necessarily demonstrate that these classes are error free.
 
-\section{\texttt{org.apache.bookkeeper.util.DiskChecker} analysis}
+\subsection{Class selection}
 
-\url{www.google.it}
+To select classes for our testing activities, we have mainly relied on results elaborated by our \textbf{defect prediction model}, developed using \textbf{Weka} \footnote{\url{https://www.cs.waikato.ac.nz/~ml/weka/}} machine learning software, using a \textit{random forests} classifier without \textit{sampling} or \textit{feature selection}. 
 
-According to our defect prediction model, \texttt{DiskChecker}\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} class was reported as a \textit{buggy} therefore, since it is likely that it exhibits a defect, we have focused on aforementioned class in order to check if there are any errors in it, attempting to increase the \textit{reliability} of the class, that is the probability of failure free execution of that class under given conditions.
+Particularly, we have focused on classes marked as \textit{defective} (or \textit{buggy}) by our predictor because it is likely that they exhibit a defect observable by our test sets. As known, this approach is able to \textit{reduce the cost of testing}, by letting to focus on specific classes, ignoring stable ones \cite{Falessi}.
 
-Our testing activity has confirmed our defect prediction because, using our test set $T_1$ which is retrievable from commit \texttt{bdf2fc28d2}\footnote{\url{https://github.com/AndreaG93/ISW2-bookkeeper/tree/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9}}, was reported that up to $5$ unit tests have failed, out of a total of $31$, revealing the presence of several bugs. In following subsection we will describe how we have build test set $T_1$.
+In particular, for our testing activities involving Apache BookKeeper\texttrademark, we have choose following classes:
+\begin{description}
+\item[\texttt{DefaultEnsemblePlacementPolicy}]\footnote{\texttt{org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy}} Because it has been marked as defective by our prediction model and, as we will see later, our testing activity has confirmed that prediction.
+\item[\texttt{DiskChecker}]\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} Although has not been marked as defective, we have choose this class due to its relative high LOC value ($294$), high number of revisions ($11$) and high number of authors ($9$). Despite its presumed stability, our testing activity have found several defects inside that class. 
+\end{description}
 
-\subsection{Equivalence Class Partitioning}
+\subsection{Testing technique}
 
-In order to build our test set $T_1$, we have adopted a \textit{black box} testing technique called \textit{equivalence class partitioning}, according to which the domain of possible input data for each input data element is divided
-into \textit{equivalence classes}. An equivalence class is a set of data values that the tester assumes are processed in the same way by the test object \cite{FoundationSoftwareTesting}.
+In order to build our test set, we have adopted a testing technique called \textit{equivalence class partitioning}, according to which the domain of possible input data for each input data element is divided
+into \textbf{equivalence classes}; an equivalence class is a set of data values that the tester assumes are processed in the same way by the test object \cite{FoundationSoftwareTesting}. 
 
-Although equivalence class definition is based on specifications (of requirements) only \cite{FoundationSoftwareTesting}, we have defined our test looking the code too, due to the lack of specification about \texttt{DiskChecker} class.
+Equivalence class definition was been mainly based on \textit{specifications} of our test objects using, therefore, a \textit{black-box} approach; however, sometimes, due to lacking of detailed specifications, we have performed our analysis looking the code too, using conversely a \textbf{while-box} approach. 
 
-\subsubsection{\texttt{DiskChecker(float, float)}}
+For any equivalence classes is important to find a \textbf{representative}. As known, testing one representative of the equivalence class is considered sufficient because it is assumed that for any other input value of the same equivalence class, the test object will show the same reaction or behaviour \cite{FoundationSoftwareTesting}. Besides equivalence classes for \textit{correct} input, those for \textit{incorrect} input values must be tested as well.
 
-Obliviously, that method represent the constructor of \texttt{DiskChecker} class, which manage directories belonging to ledger entities. 
-
-According to bookkeeper specification\footnote{\url{https://bookkeeper.apache.org/docs/4.7.3/reference/config/}}, is possible to specify, for each ledger directory, a maximum disk space (\texttt{diskUsageThreshold}) which can be used. Moreover is possible to set a warning threshold for disk usage (\texttt{diskUsageWarnThreshold}). Specification establishes 
-
-\vspace{5pt}
-\textit{that valid values should be in between $0$ and $1$ (exclusive).}
-\vspace{5pt}
-
-For both thresholds, bookkeeper specifications establish a default value, which is equal to $0,95$. In table \ref{tab:DiskCheckerEqClass} all found equivalence classes, both for valid ($vEC$) and invalid input ($iEC$) , are been reported, including respective representative values necessary to build our test set. 
-
-The next step is to combine the values to test cases. From a methodological point of view, to guarantee that all test object reactions are triggered, we have combined representative values using following rules:
+To guarantee that all test object reactions are triggered, we have combined representative values using following rules:
 \begin{enumerate}
 \item The representative value of all valid equivalence classes have been combined to test cases (\textit{valid/positive test case}), meaning that all possible combinations of valid equivalence classes will be covered. 
 \item The representative value of an invalid equivalence class have been combined only with representatives of other valid equivalence classes (\textit{invalid/negative test case}).
 \end{enumerate}
 
-Generally, since even a few parameters can generate hundreds of valid test cases, o reduce the number of tests, we have adopted following rules
+Moreover, we have adopted following guidelines\cite{FoundationSoftwareTesting}:
 
 \begin{enumerate}
 \item Test cases including boundary values combinations are preferred.
 \item Every representative of an equivalence class appears in at least one test case.
 \item Representatives of invalid equivalence classes should not be combined with representatives of other invalid equivalence classes.
 \end{enumerate}
+
+\section{Apache Bookkeeper\texttrademark}
+\subsection{\texttt{DefaultEnsemblePlacementPolicy} class testing analysis}
+
+What are responsibilities of \texttt{DefaultEnsemblePlacementPolicy} class? What meant by \texttt{ensemble}? And what for \texttt{placement policy}?
+
+According to bookkeeper specifications\cite{BookKeeperArchitecture}, an \textbf{ensemble} represents a group of \textbf{bookies} storing \textbf{entries}. To be more precise, according to bookkeeper's nomenclature, a \textbf{bookie} is an individual storage server while \textbf{entries} represent stored data, therefore an ensemble of size $E$ represents simply a group of storage servers.
+
+The aim of this design is to guarantee \textbf{consistency} in an ensemble of bookies of all stored data exploiting a \textbf{quorum-based replicated-write} protocol. As known, to support replicated writes at multiple replicas of a file, a client must first contact at least half the servers plus one (a majority) and get them to agree to do the update\cite{Tanenbaum}. Technically, in order to modify a file, a client needs to assemble the so called \textbf{write quorum}, that is an arbitrary collection of servers which must be more than the half of all available servers\cite{Tanenbaum}. Therefore, using bookkeeper's nomenclature, the size of write quorum $Q_w$ represents the number of bookies where each entry is written. 
+
+According to bookKeeper protocol\cite{BookKeeperProtocol}, the following invariant must hold:
+
+\begin{equation}
+E \geqslant Q_w \geqslant Q_a
+\end{equation}
+
+In other word, the ensemble size $E$ must be larger than the write quorum size $Q_w$, which must in turn be larger than the so called \textbf{ack quorum size} $Q_a$, which represents, instead, the number of nodes an entry must be acknowledged on. 
+
+BookKeeper uses several algorithms to selects a number of bookies from a cluster to build an ensemble compliant to above specifications, some of which are capable to exploit several network topology proprieties too. 
+
+According to BookKeeper design, the implementations of these algorithm must be compliant to \texttt{EnsemblePlacementPolicy} interface \cite{EnsemblePlacementPolicy}; in other words, any implementation must respect a specific \textit{contract}, established by aforementioned interface, which covers aspects related to initialization and bookie selection for data placement and reads\cite{EnsemblePlacementPolicy}. 
+
+Currently there are 3 implementations available by default. They are:
+\begin{itemize}
+\item \texttt{DefaultEnsemblePlacementPolicy}
+\item \texttt{RackawareEnsemblePlacementPolicy}
+\item \texttt{RegionAwareEnsemblePlacementPolicy}
+\end{itemize}
+
+In particular, \texttt{DefaultEnsemblePlacementPolicy} class encapsulates the simplest algorithm for bookie selection for ensemble creation because it, simply, picks bookies randomly in order to build an ensemble. 
+
+\subsection{\texttt{DiskChecker} class testing analysis}
+
+According to BookKeeper's documentation, \texttt{DiskChecker} class is used to provide several utility functions for checking disk problems, managing all directories belonging to \textbf{ledgers}, which represents the basic unit of storage in BookKeeper\cite{BookKeeperArchitecture}. 
+
+Specifications establishes that, for each ledger directory, is possible to specify a maximum disk space $D$ which can be used and a, so-called, warning threshold $D_w$ for disk usage\cite{BookKeeperConfiguration}. In particular, the following invariant must hold:
+
+\begin{eqnarray}
+0  <  & D &  <  1 \nonumber \\
+D_w  \leq  & D & 
+\end{eqnarray}
+
+However, for both thresholds, BookKeeper's specifications establish a default value, which is equal to $0.95$. 
+
+Using out test set $T_1$, which is retrievable from commit \texttt{bdf2fc28d2}\footnote{\url{https://github.com/AndreaG93/ISW2-bookkeeper/tree/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9}}, our testing activity reports that up to $5$ unit tests have failed, out of a total of $31$, revealing the presence of several bugs, despite its stability according to our prediction model. In following subsections, we will describe how we have build our test sets.
+
+
+
+
+
+
+
+
+
+\subsubsection{\texttt{DiskChecker(float, float)}}
+
+Obliviously, that method represent the constructor of \texttt{DiskChecker} class, which manage directories belonging to ledger entities. 
 
 Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by combining the representatives of the valid equivalence classes) and $1 + 3 = 4$ negative test cases
 (by separately testing representatives of every invalid class). Since test cases belonging to both $iEC_3$ of  \texttt{threshold} parameter and $iEC_1$ of \texttt{warnThreshold} overlap, in total $4$ test cases result from the $6$ equivalence classes.
@@ -235,7 +294,7 @@ Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by c
   \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{getTotalDiskSpace(List<File> dirs)}}
+%\subsubsection{\texttt{getTotalDiskSpace(List<File> dirs)}}
 
 \begin{table*}
   \caption{Equivalence classes and representatives of  \texttt{getTotalFreeSpace} and \texttt{getTotalDiskSpace} methods}
@@ -397,36 +456,6 @@ According to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation 
 
 
 
-\section{\texttt{org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy} analysis}
-
-What is meant by \texttt{DefaultEnsemblePlacementPolicy}? What are its responsibilities?
-
-According to \texttt{bookkeeper} specifications\cite{BookKeeperArchitecture}, an \textbf{ensemble} represents a group of \textbf{bookies} storing \textbf{entries}. To be more precise, according to \texttt{bookkeeper}'s nomenclature, a \textbf{bookie} is an individual storage server while \textbf{entries} represent stored data, therefore an ensemble of size $E$ represents simply a group of storage servers.
-
-The aim of this design is to guarantee \textbf{consistency} in an ensemble of bookies of all stored data exploiting a \textbf{quorum-based replicated-write} protocol. As known, to support replicated writes at multiple replicas of a file, a client must first contact at least half the servers plus one (a majority) and get them to agree to do the update\cite{Tanenbaum}. Technically, in order to modify a file, a client needs to assemble the so called \textbf{write quorum}, that is an arbitrary collection of servers which must be more than the half of all available servers\cite{Tanenbaum}. Therefore, using \texttt{bookkeeper}'s nomenclature, the size of write quorum $Q_w$ represents the number of bookies where each entry is written. 
-
-According to \texttt{bookkeeper} protocol\cite{BookKeeperProtocol}, the following invariant must hold:
-
-\begin{equation}
-E \geqslant Q_w \geqslant Q_a
-\end{equation}
-
-In other word, the ensemble size $E$ must be larger than the write quorum size $Q_w$, which must in turn be larger than the so called \textbf{ack quorum size} $Q_a$, which represents, instead, the number of nodes an entry must be acknowledged on. 
-
-How are ensemble built in order to be compliant to above specifications? 
-
-Is very important to precise that \texttt{bookkeeper} uses several algorithms to selects a number of bookies from a cluster as an ensemble, some of which are capable to exploit several network topology proprieties too. According to \texttt{bookkeeper} design, implementations of these algorithm must be compliant to \texttt{EnsemblePlacementPolicy} interface \cite{EnsemblePlacementPolicy}, in other words any implementation must respect the \textit{contract} establish by \texttt{EnsemblePlacementPolicy} interface, which covers aspects related to initialization and bookie selection for data placement and reads\cite{EnsemblePlacementPolicy}. 
-
-Currently there are 3 implementations available by default. They are:
-\begin{itemize}
-\item \texttt{DefaultEnsemblePlacementPolicy}
-\item \texttt{RackawareEnsemblePlacementPolicy}
-\item \texttt{RegionAwareEnsemblePlacementPolicy}
-\end{itemize}
-
-The subject of our analysis is the \texttt{DefaultEnsemblePlacementPolicy} class, which encapsulates the simplest algorithm for bookie selection for ensemble creation because it, simply, picks bookies randomly in order to build an ensemble.
-
-According to our defect prediction model, \texttt{DefaultEnsemblePlacementPolicy}\footnote{\texttt{org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy}} class was reported as a \textit{buggy} therefore, since it is likely that it exhibits a defect, we have focused on aforementioned class in order to check if there are any errors in it, attempting to increase the \textit{reliability} of the class, that is the probability of failure free execution of that class under given conditions.
 
 \subsection{Equivalence Class Partitioning}
 
@@ -502,35 +531,50 @@ Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBooki
 \end{table}
 
 
-\subsubsection{\texttt{public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)}}
+\subsubsection{\texttt{newEnsemble}}
 
-fdsfdsfsd
-fsdfsdfds
-
-
-\begin{lstlisting}[frame=lines,caption={\texttt{onClusterChanged} method signature.},basicstyle=\fontsize{8}{9}\selectfont]
+\begin{lstlisting}[frame=lines,basicstyle=\fontsize{8}{9}\selectfont]
 public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)
 \end{lstlisting}
 
-According to \texttt{bookkeeper} documentation, \texttt{newEnsemble} method is used to build an ensemble made up \texttt{ensembleSize} bookies which takes up to $5$ parameters:
-\begin{tabular}{ll}
+According to \texttt{bookkeeper} documentation \citep{EnsemblePlacementPolicy}, \texttt{newEnsemble} method takes up to $5$ parameters and is used to build an ensemble made up of several bookies. 
+\begin{description}
+\item[\texttt{ensembleSize}] Represents the ensemble size.
+\item[\texttt{writeQuorumSize}] the value of write quorum size
+\item[\texttt{ackQuorumSize}] the value of ack Quorum Size
+\item[\texttt{customMetadata}] user added metadata. This data are not managed directy by \texttt{DefaultEnsemblePlacementPolicy} class
+\item[\texttt{excludeBookies}] ookies that should not be considered as targets for the new ensemble.
+\end{description}
+
+is used to build an ensemble made up \texttt{ensembleSize} bookies which takes up to $5$ parameters:
+
+\equivalenceClassesTable{Equivalence classes and representatives of \texttt{newEnsemble} method}{
+  
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+    \\
+	\multirow{25}{*}{\texttt{ensembleSize}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
   
 
-\texttt{ensembleSize} & Ensemble Size \\
-\texttt{writeQuorumSize} & Write Quorum Size \\
-\texttt{ackQuorumSize} & the value of ackQuorumSize (added since 4.5) \\
-\texttt{customMetadata} & the value of customMetadata. \\
-\texttt{excludeBookies} & Bookies that should not be considered as targets. \\
+\\
+	\multirow{25}{*}{\texttt{writeQuorumSize}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
+	
+	\\
+	\multirow{25}{*}{\texttt{ackQuorumSize}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
+	
+	\\
+	\multirow{25}{*}{\texttt{customMetadata}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
+	
+	\\
+	\multirow{25}{*}{\texttt{excludeBookies}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:\\
 
-\end{tabular}
+
+}
 
 
 
-\begin{description}
-\item[\texttt{ensembleSize}] Ensemble Size
-\itemt{ensembleSize} Ensemble Size
- 
-\end{description}
+
 
 
  According to method signature, if  not enough bookies are available to build an ensemble of size \texttt{ensembleSize}, a \texttt{BKNotEnoughBookiesException} is thrown.
@@ -638,11 +682,11 @@ public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)
 
 
 
-\bibliographystyle{IEEEtran}
+\bibliographystyle{ACM-Reference-Format}
 \bibliography{Bib}
 
 
 \end{document}
-
+\endinput
 
 
