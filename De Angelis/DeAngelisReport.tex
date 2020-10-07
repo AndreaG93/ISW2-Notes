@@ -15,6 +15,9 @@
 \usepackage{adjustbox}
 \usepackage[nameinlink]{cleveref}
 
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+
 \lstset{
 language=Java,
 basicstyle=\small\ttfamily,			
@@ -92,7 +95,7 @@ Particularly, we have focused on classes marked as \textit{defective} (or \texti
 In particular, for our testing activities involving Apache BookKeeper\texttrademark, we have choose following classes:
 \begin{description}
 \item[\texttt{DefaultEnsemblePlacementPolicy}]\footnote{\texttt{org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy}} Because it has been marked as defective by our prediction model and, as we will see later, our testing activity has confirmed that prediction.
-\item[\texttt{DiskChecker}]\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} Although has not been marked as defective, we have choose this class due to its relative high LOC value ($294$), high number of revisions ($11$) and high number of authors ($9$). Despite its presumed stability, our testing activity have found several defects inside that class. 
+\item[\texttt{DiskChecker}]\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} Although it has not been marked as defective, we have choose this class due to its relative high LOC value ($294$), high number of revisions ($11$) and high number of authors ($9$). Despite its presumed stability, our testing activity has found several defects inside that class. 
 \end{description}
 
 \subsection{Testing technique}
@@ -148,6 +151,91 @@ Currently there are 3 implementations available by default. They are:
 
 In particular, \texttt{DefaultEnsemblePlacementPolicy} class encapsulates the simplest algorithm for bookie selection for ensemble creation because it, simply, picks bookies randomly in order to build an ensemble. 
 
+\subsubsection{\texttt{initialize}}
+\hfill\\
+According to documentation, after the creation of an \texttt{Default\-EnsemblePlacementPolicy} object's instance, bookKeeper client have to call \texttt{initialize} method, which signature is reported in \textbf{\cref{initializeSignature}}, in order to initialize the placement policy. 
+
+Observing method's signature and documentation, we note that several complex resources, passed as parameter, are necessary to invoke this method, however, observing method's implementation, only one of them is effectively used, simplifying our testing activity.
+
+In fact, only \texttt{conf} parameter, representing a \texttt{Client\-Configu\-ration} object, used to contain client configuration necessary for bookKeeper client construction, is effectively used. 
+
+Moreover, only following methods, belonging \texttt{Client\-Configu\-ration} class, using \texttt{conf} parameter, are invoked in \texttt{initialize} method:
+
+\begin{itemize}
+\item \texttt{getDiskWeightBasedPlacementEnabled}
+\item \texttt{getBookieMaxWeightMultipleForWeightBasedPlacement}
+\end{itemize}
+
+Therefore, in order to test \texttt{initialize} method, we have choose to use a \textbf{mock}. As known, a mock is a special-purpose replacement class that mimic behaviour of real objects in controlled ways, for example returning values to the calling component. As known, the use of mock is very useful during testing activity of incomplete portions of software because you have not to to wait for their completion to start your test activity. 
+
+Oblivious, we have use \textbf{Mockito framework}\footnote{\url{https://site.mockito.org/}} to manage \texttt{conf} parameter's return values.
+
+All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respectively, are reported in \textbf{\cref{initializeEq}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{initialize}}, label={initializeSignature}]
+EnsemblePlacementPolicy initialize(ClientConfiguration conf,
+                                   Optional<DNSToSwitchMapping> optionalDnsResolver,
+                                   HashedWheelTimer hashedWheelTimer,
+                                   FeatureProvider featureProvider,
+                                   StatsLogger statsLogger)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{initialize} method}
+\label{initializeEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{conf} & $vEC_1$ & A not-\texttt{null} \texttt{ClientConfiguration} object which:
+
+\begin{itemize}
+\item \texttt{conf.getDiskWeightBasedPlacementEnabled() = true}
+\end{itemize}
+
+ & \textit{(see the code)}
+
+\\\cline{2-4} 
+
+& $vEC_1$ & A not-\texttt{null} \texttt{ClientConfiguration} object which:
+
+\begin{itemize}
+\item \texttt{conf.getDiskWeightBasedPlacementEnabled() = false}
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{optionalDnsResolver} & $vEC_1$ & Any value. \texttt{optionalDnsResolver} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{hashedWheelTimer} & $vEC_1$ & Any value. \texttt{hashedWheelTimer} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{featureProvider} & $vEC_1$ & Any value. \texttt{featureProvider} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{statsLogger} & $vEC_1$ & Any value. \texttt{statsLogger} is never used or accessed by the class. & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
 \subsubsection{\texttt{newEnsemble}}
 \hfill\\
 Documentation \citep{EnsemblePlacementPolicy} reports that \texttt{newEnsemble} method is used to build an ensemble made up of several bookies. Method signature, shown below in \textbf{\cref{newEnsembleSignature}}, reports that it takes up to $5$ parameters and return an ensemble which is represented by a \texttt{List<BookieSocket\-Address>} object. 
@@ -175,7 +263,9 @@ Is very important to precise that, in order to build an ensemble, bookies are pi
 
 Moreover, please note that we will use $K$ to represent the set of \texttt{BookieSocketAddress} objects of \texttt{knownBookies}, while $E$, conversely, will be used to refer to the set of \texttt{BookieSocketAddress} objects belonging to \texttt{excludeBookies}.
 
-All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respectively, are reported in \textbf{\cref{newEnsembleEq}}.
+All valid and invalid equivalence classes are reported in \textbf{\cref{newEnsembleEq}}.
+
+For this method, we have developed $2 \times 1 \times 1 \times 1 \times 2 = 4$ valid test cases, by combining the representatives of the equivalence classes, and $2 + 1 + 1 + 3 = 7$ negative test cases, by separately testing representatives of every invalid class, with a total of $11$ test cases. However, every test case was been executed twice because, as said previously, two different forms of initialization of \texttt{DefaultEnsemblePlacementPolicy} object exist (see \texttt{initialize} method); therefore, we have executed a total of $22$ tests; of these, $8$ failed.
 
 \begin{table*}
 \footnotesize
@@ -197,6 +287,10 @@ All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respecti
 \\\cline{2-4}
 
 & $iEC_1$ & $\texttt{ensembleSize} < 0$ & $-1$
+
+\\\cline{2-4}
+
+& $iEC_2$ & $\texttt{ensembleSize} > |K| - |E|$ & $|K| - |E| + 1$
 
 \\\hline
 
@@ -243,25 +337,6 @@ All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respecti
 & $iEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
 \begin{itemize}
 \item $|E| > 0$
-\item $E \cap K = \emptyset$
-\end{itemize}
-
-& \textit{(see the code)}
-
-\\\cline{2-4}
-
-& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
-\begin{itemize}
-\item $K = E$
-\end{itemize}
-
-& \textit{(see the code)}
-
-\\\cline{2-4}
-
-& $iEC_3$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
-\begin{itemize}
-\item $|E| > 0$
 \item $\exists x \in E : x \notin K$
 \end{itemize}
 
@@ -269,7 +344,7 @@ All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respecti
 
 \\\cline{2-4}
 
-& $iEC_4$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
 \begin{itemize}
 \item $|E| > 0$
 \item $\exists x \in E : x = \texttt{null}$
@@ -279,7 +354,7 @@ All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respecti
 
 \\\cline{2-4}
 
-& $iEC_5$ & \texttt{null} object  & \texttt{null}
+& $iEC_3$ & \texttt{null} object  & \texttt{null}
 
 \\
 
@@ -300,6 +375,8 @@ Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBooki
 \end{lstlisting}
 
 All valid and invalid equivalence classes are reported in \textbf{\cref{onClusterChangedEq}}.
+
+Combining the representatives of the equivalence classes, we have developed are $2 \times 2  = 4$ valid test cases and $3 + 3 = 6$ negative test cases, by separately testing representatives of every invalid class. Therefore, we have a $10$ distinct tests and, since we have to run each test twice, we have a total of $20$ test cases; of these, $8$ failed. 
 
 \begin{table*}
 \footnotesize
@@ -411,7 +488,7 @@ According to \texttt{DefaultEnsemblePlacementPolicy} interface's documentation \
 Please note that we will use $K$ to represent the set of the \textit{keys} (or \textit{indexes}) of the dictionary \texttt{bookieInfoMap}, that is the set of all \texttt{BookieSocketAddress} objects used as indexes. Conversely, 
 $V$ will be used to refer to the set of the \textit{values} of the dictionary, made up of \texttt{BookieInfo} objects.
 
-Signature is reported in \textbf{\cref{updateBookieInfoSignature}}, while equivalence classes are shown in \textbf{\cref{updateBookieInfoEq}}.
+Signature is reported in \textbf{\cref{updateBookieInfoSignature}}, while equivalence classes are shown in \textbf{\cref{updateBookieInfoEq}}. In this case, we have developed are $2$ valid test cases and $4$ negative test cases. Therefore, we have $6$ distinct tests and, since we have to run each test twice, we have a total of $12$ test cases; of these, $3$ failed. 
 
 \begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{updateBookieInfo}}, label={updateBookieInfoSignature}]
 void updateBookieInfo(Map<BookieSocketAddress,BookieInfo> bookieInfoMap)
@@ -431,32 +508,58 @@ void updateBookieInfo(Map<BookieSocketAddress,BookieInfo> bookieInfoMap)
 \texttt{bookieInfoMap} & $vEC_1$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
 	
 \begin{itemize}
-\item $\texttt{bookieInfoMap.size()} \geqslant 0$
-\item $\forall (x,y) \in K \times V \Rightarrow x \neq null, y \neq null$
+\item $\texttt{bookieInfoMap.size()} = 0$
 \end{itemize}
 
 & \textit{(see the code)}   
     
 \\\cline{2-4}    
     
+& $vEC_2$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item $\forall (x,y) \in K \times V \Rightarrow x \neq null, y \neq null$
+\end{itemize}
+
+& \textit{(see the code)}   
+    
+\\\cline{2-4}       
+    
 & $iEC_1$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
 	
 \begin{itemize}
 \item $\texttt{bookieInfoMap.size()} > 0$
-\item One of the following condition is true:
-
-\begin{enumerate}
 \item $\exists (x,y) \in K \times V : x = null, y \neq null$
-\item $\exists (x,y) \in K \times V : x \neq null, y = null$
-\item $\exists (x,y) \in K \times V : x = null, y = null$
-\end{enumerate}
 \end{itemize}
 
 & \textit{(see the code)} 
 
 \\\cline{2-4}    
     
-& $iEC_2$: & \texttt{null} object. & \texttt{null} 
+& $iEC_2$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item $\exists (x,y) \in K \times V : x \neq null, y = null$
+\end{itemize}
+
+& \textit{(see the code)} 
+
+\\\cline{2-4}  
+
+& $iEC_3$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item $\exists (x,y) \in K \times V : x = null, y = null$
+\end{itemize}
+
+& \textit{(see the code)} 
+
+\\\cline{2-4}  
+
+& $iEC_4$: & \texttt{null} object. & \texttt{null} 
     
 \\
 \bottomrule
@@ -497,6 +600,10 @@ BookieSocketAddress replaceBookie(int ensembleSize,
 
 \texttt{writeQuorumSize} & & See \textbf{\cref{newEnsembleEq}} &
 	
+\\\hline
+
+\texttt{ackQuorumSize} & & See \textbf{\cref{newEnsembleEq}} &
+
 \\\hline
 
 \texttt{customMetadata} & & See \textbf{\cref{newEnsembleEq}} &
@@ -579,6 +686,18 @@ BookieSocketAddress replaceBookie(int ensembleSize,
 \bottomrule
 \end{tabular}
 \end{table*}
+
+\subsubsection{\texttt{Other methods}}
+\hfill\\
+To be precise, \texttt{DefaultEnsemblePlacementPolicy} class contains many other methods not analysed in this report because either they does nothing or they return always the same value regardless input parameters.
+
+Those methods are:
+\begin{description}
+\item[\texttt{uninitalize}] This method does nothing.
+\item[\texttt{registerSlowBookie}] This method does nothing too.
+\item[\texttt{isEnsembleAdheringToPlacementPolicy}] Return always \texttt{Place\-ment\-Policy\-Adherence.MEETS\_STRICT} regardless input parameters.
+\item[\texttt{reorderReadSequence}] Returns always a \texttt{WriteSet} object which is passed as parameter.
+\end{description}
 
 \subsection{\texttt{DiskChecker} class testing analysis}
 
