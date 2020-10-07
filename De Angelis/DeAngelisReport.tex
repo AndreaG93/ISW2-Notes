@@ -13,6 +13,7 @@
 \usepackage{url}
 \usepackage{hyperref}
 \usepackage{adjustbox}
+\usepackage[nameinlink]{cleveref}
 
 \lstset{
 language=Java,
@@ -21,6 +22,7 @@ keywordstyle=\color{blue},
 commentstyle=\color{gray},			
 stringstyle=\color{black},					
 }
+
 
 \AtBeginDocument{%
   \providecommand\BibTeX{{%
@@ -46,6 +48,8 @@ stringstyle=\color{black},
 \newcommand{\equivalenceClassesTable}[2]{
 \AndreaTable{#1}{llm{8cm}m{8cm}}{#2}
 }
+
+
 
 
 \settopmatter{printacmref=false, printccs=false, printfolios =false}
@@ -144,6 +148,438 @@ Currently there are 3 implementations available by default. They are:
 
 In particular, \texttt{DefaultEnsemblePlacementPolicy} class encapsulates the simplest algorithm for bookie selection for ensemble creation because it, simply, picks bookies randomly in order to build an ensemble. 
 
+\subsubsection{\texttt{newEnsemble}}
+\hfill\\
+Documentation \citep{EnsemblePlacementPolicy} reports that \texttt{newEnsemble} method is used to build an ensemble made up of several bookies. Method signature, shown below in \textbf{\cref{newEnsembleSignature}}, reports that it takes up to $5$ parameters and return an ensemble which is represented by a \texttt{List<BookieSocket\-Address>} object. 
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{newEnsemble}}, label={newEnsembleSignature}]
+List<BookieSocketAddress> newEnsemble(int ensembleSize,
+                                      int writeQuorumSize,
+                                      int ackQuorumSize,
+                                      Map<String,byte[]> customMetadata,
+                                      Set<BookieSocketAddress> excludeBookies)
+                            throws BKException.BKNotEnoughBookiesException
+\end{lstlisting}
+
+The meaning of all parameter is:
+
+\begin{description}
+\item[\texttt{ensembleSize}] represents the ensemble size.
+\item[\texttt{writeQuorumSize}] the value of write quorum size.
+\item[\texttt{ackQuorumSize}] the value of ack quorum Size.
+\item[\texttt{customMetadata}] user meta-data.
+\item[\texttt{excludeBookies}] a collection of bookies that should not be considered as targets for the new ensemble.
+\end{description}
+
+Is very important to precise that, in order to build an ensemble, bookies are picked up from a set called \texttt{knownBookies}, which can be populated invoking \texttt{onClusterChanged} method (which we will describe following).
+
+Moreover, please note that we will use $K$ to represent the set of \texttt{BookieSocketAddress} objects of \texttt{knownBookies}, while $E$, conversely, will be used to refer to the set of \texttt{BookieSocketAddress} objects belonging to \texttt{excludeBookies}.
+
+All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respectively, are reported in \textbf{\cref{newEnsembleEq}}.
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{newEnsemble} method}
+\label{newEnsembleEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{ensembleSize} & $vEC_1$ & $\texttt{ensembleSize} = 0$ & $0$
+
+\\\cline{2-4}
+
+& $vEC_2$ & $0 < \texttt{ensembleSize} \leq |K| - |E|$ & $|K| - |E|$
+
+\\\cline{2-4}
+
+& $iEC_1$ & $\texttt{ensembleSize} < 0$ & $-1$
+
+\\\hline
+
+\texttt{writeQuorumSize} & $vEC_1$ & $\texttt{writeQuorumSize} \leq \texttt{ensembleSize}$  & \texttt{ensembleSize}
+
+\\\cline{2-4}
+
+& $iEC_1$ & $\texttt{writeQuorumSize} > \texttt{ensembleSize}$  & $\texttt{ensembleSize} + 1$
+	
+\\\hline
+
+\texttt{ackQuorumSize} & $vEC_1$ & $\texttt{ackQuorumSize} \leq \texttt{writeQuorumSize}$  & \texttt{writeQuorumSize}
+
+\\\cline{2-4}
+
+& $iEC_1$ & $\texttt{ackQuorumSize} > \texttt{writeQuorumSize}$  & $\texttt{ackQuorumSize} + 1$
+	
+\\\hline
+
+\texttt{customMetadata} & $vEC_1$ & Any value. \texttt{customMetadata} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{excludeBookies} & $vEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $|E| = 0$
+\end{itemize}
+
+& \texttt{new HashSet<>()}
+
+\\\cline{2-4}
+
+& $vEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $0 < |E| < |K|$
+\item $E \subset K$
+\item $|K| - |E| \geq \texttt{ensembleSize}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $|E| > 0$
+\item $E \cap K = \emptyset$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $K = E$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_3$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $|E| > 0$
+\item $\exists x \in E : x \notin K$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_4$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $|E| > 0$
+\item $\exists x \in E : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_5$ & \texttt{null} object  & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+\subsubsection{\texttt{onClusterChanged}}
+\hfill\\
+\texttt{onClusterChanged} method is used to update the view of the cluster, that is to specify what bookies are available as \textit{writeable} and what bookies are available as \textit{read-only}; this operation is necessary to populate, or update, \texttt{knownBookies} set which, as already said, is used to pick up bookies during \texttt{newEnsemble} invocation. According to documentation, \texttt{onClusterChanged} should be invoked when any changes happen in the cluster, returning a list of \textit{failed} (or \textit{dead}) bookies during this cluster change. 
+
+Signature is reported in \textbf{\cref{onClusterChangedSignature}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{onClusterChanged}}, label={onClusterChangedSignature}]
+Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBookies,
+                                          Set<BookieSocketAddress> readOnlyBookies)
+\end{lstlisting}
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{onClusterChangedEq}}.
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{onClusterChanged} method}
+\label{onClusterChangedEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{writableBookies} & $vEC_1$ & An not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+
+\begin{itemize}
+\item $\texttt{writableBookies.size()} = 0$
+\end{itemize}
+
+& \texttt{new HashSet<>()}
+
+\\\cline{2-4}
+
+& $vEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{writableBookies.size()} > 0$
+\item $\texttt{writableBookies}  \cap \texttt{readOnlyBookies} = \emptyset$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{writableBookies.size()} > 0$
+\item $\exists x \in \texttt{writableBookies} : x \in \texttt{readOnlyBookies}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{writableBookies.size()} > 0$
+\item $\exists x \in \texttt{writableBookies} : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{readOnlyBookies} & $vEC_1$ & An not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} = 0$
+\end{itemize}
+
+& \texttt{new HashSet<>()}
+
+\\\cline{2-4}
+
+& $vEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} > 0$
+\item $\texttt{writableBookies}  \cap \texttt{readOnlyBookies} = \emptyset$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} > 0$
+\item $\exists x \in \texttt{readOnlyBookies} : x \in \texttt{writableBookies}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} > 0$
+\item $\exists x \in \texttt{readOnlyBookies} : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsubsection{\texttt{updateBookieInfo}}
+\hfill\\
+According to \texttt{DefaultEnsemblePlacementPolicy} interface's documentation \cite{EnsemblePlacementPolicy}, \texttt{updateBookieInfo} is used to update bookie info details, taking only one input parameter, a \texttt{Map<BookieSocketAddress, BookieInfo>} object. 
+
+Please note that we will use $K$ to represent the set of the \textit{keys} (or \textit{indexes}) of the dictionary \texttt{bookieInfoMap}, that is the set of all \texttt{BookieSocketAddress} objects used as indexes. Conversely, 
+$V$ will be used to refer to the set of the \textit{values} of the dictionary, made up of \texttt{BookieInfo} objects.
+
+Signature is reported in \textbf{\cref{updateBookieInfoSignature}}, while equivalence classes are shown in \textbf{\cref{updateBookieInfoEq}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{updateBookieInfo}}, label={updateBookieInfoSignature}]
+void updateBookieInfo(Map<BookieSocketAddress,BookieInfo> bookieInfoMap)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{updateBookieInfo} method}
+\label{updateBookieInfoEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{bookieInfoMap} & $vEC_1$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} \geqslant 0$
+\item $\forall (x,y) \in K \times V \Rightarrow x \neq null, y \neq null$
+\end{itemize}
+
+& \textit{(see the code)}   
+    
+\\\cline{2-4}    
+    
+& $iEC_1$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item One of the following condition is true:
+
+\begin{enumerate}
+\item $\exists (x,y) \in K \times V : x = null, y \neq null$
+\item $\exists (x,y) \in K \times V : x \neq null, y = null$
+\item $\exists (x,y) \in K \times V : x = null, y = null$
+\end{enumerate}
+\end{itemize}
+
+& \textit{(see the code)} 
+
+\\\cline{2-4}    
+    
+& $iEC_2$: & \texttt{null} object. & \texttt{null} 
+    
+\\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsubsection{\texttt{replaceBookie}}
+\hfill\\
+Documentation reports that \texttt{replaceBookie} is choose randomly a bookie form \texttt{knownBookies} set, if available, in order to replace it with a bookie passed as parameter. 
+
+Observing method's implementation and its signature, the latter reported in \textbf{\cref{replaceBookieSignature}}, it is easy to notice a similarity with \texttt{newEnsamble} the method, described previously. Despite very little differences, equivalence classes of both methods are, practically, the same; please see \textbf{\cref{replaceBookieEq}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{replaceBookie}}, label={replaceBookieSignature}]
+BookieSocketAddress replaceBookie(int ensembleSize,
+                                  int writeQuorumSize,
+                                  int ackQuorumSize,
+                                  Map<String,byte[]> customMetadata,
+                                  Set<BookieSocketAddress> currentEnsemble,
+                                  BookieSocketAddress bookieToReplace,
+                                  Set<BookieSocketAddress> excludeBookies)
+                            throws BKException.BKNotEnoughBookiesException
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{replaceBookie} method}
+\label{replaceBookieEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{ensembleSize} & & See \textbf{\cref{newEnsembleEq}} &
+
+\\\hline
+
+\texttt{writeQuorumSize} & & See \textbf{\cref{newEnsembleEq}} &
+	
+\\\hline
+
+\texttt{customMetadata} & & See \textbf{\cref{newEnsembleEq}} &
+
+\\\hline
+
+\texttt{currentEnsemble} & $vEC_1$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} > 0$
+\item $\forall x \in \texttt{currentEnsemble} \Rightarrow x \in K$
+\item $\forall x \in \texttt{currentEnsemble} \Rightarrow x \neq \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_1$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} = 0$
+\end{itemize}
+
+& \texttt{new ArrayList<>()}
+
+\\\cline{2-4}   
+
+& $iEC_2$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} > 0$
+\item $\forall x \in \texttt{currentEnsemble} \Rightarrow x \neq \texttt{null}$
+\item $\exists x \in \texttt{currentEnsemble} : x \notin K$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_3$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} > 0$
+\item $\exists x \in \texttt{currentEnsemble} : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_4$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{bookieToReplace} & $vEC_1$ & A valid \texttt{BookieSocketAddress} object where:
+\begin{itemize}
+\item $\texttt{bookieToReplace} \in \texttt{currentEnsemble}$
+\item $\texttt{bookieToReplace} \neq \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_1$ & A valid \texttt{BookieSocketAddress} object where:
+\begin{itemize}
+\item $\texttt{bookieToReplace} \notin \texttt{currentEnsemble}$
+\item $\texttt{bookieToReplace} \neq \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_2$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{excludeBookies} & & See \textbf{\cref{newEnsembleEq}} &
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
 \subsection{\texttt{DiskChecker} class testing analysis}
 
 According to BookKeeper's documentation, \texttt{DiskChecker} class is used to provide several utility functions for checking disk problems, managing all directories belonging to \textbf{ledgers}, which represents the basic unit of storage in BookKeeper\cite{BookKeeperArchitecture}. 
@@ -159,47 +595,58 @@ However, for both thresholds, BookKeeper's specifications establish a default va
 
 Using out test set $T_1$, which is retrievable from commit \texttt{bdf2fc28d2}\footnote{\url{https://github.com/AndreaG93/ISW2-bookkeeper/tree/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9}}, our testing activity reports that up to $5$ unit tests have failed, out of a total of $31$, revealing the presence of several bugs, despite its stability according to our prediction model. In following subsections, we will describe how we have build our test sets.
 
+\subsubsection{\texttt{DiskChecker}}
+\hfill\\
+Obliviously, that method represents the constructor of \texttt{DiskChecker} class and takes up to $2$ parameters:
 
+\begin{description}
+\item[\texttt{threshold}] previously indicated as $D$
+\item[\texttt{warnThreshold}] previously indicated as $D_w$
+\end{description}
 
+All valid and invalid equivalence classes, which definition is clearly based on specifications described before, are reported in \textbf{\cref{DiskCheckerEq}}, while method signature is reported in \textbf{\cref{DiskCheckerSignature}}.
 
+We have developed $1 \times 1 = 1$ valid test cases (by combining the representatives of the valid equivalence classes) and $1 + 3 = 4$ negative test cases. Since test cases belonging to both $iEC_3$ of  \texttt{threshold} parameter and $iEC_1$ of \texttt{warnThreshold} overlap, in total $4$ test cases result from the $6$ equivalence classes.
 
+Equivalence classes are shown \textbf{\cref{DiskCheckerEq}}. while test cases are reported in \textbf{\cref{DiskCheckerTestCases}}.
 
-
-
-
-\subsubsection{\texttt{DiskChecker(float, float)}}
-
-Obliviously, that method represent the constructor of \texttt{DiskChecker} class, which manage directories belonging to ledger entities. 
-
-Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by combining the representatives of the valid equivalence classes) and $1 + 3 = 4$ negative test cases
-(by separately testing representatives of every invalid class). Since test cases belonging to both $iEC_3$ of  \texttt{threshold} parameter and $iEC_1$ of \texttt{warnThreshold} overlap, in total $4$ test cases result from the $6$ equivalence classes.
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{DiskChecker}}, label={DiskCheckerSignature}]
+public DiskChecker(float threshold, float warnThreshold)
+\end{lstlisting}
 
 \begin{table*}
-  \caption{Equivalence classes and representatives of \texttt{DiskChecker} method}
-  \label{tab:DiskCheckerEqClass}
-  \centering
-  \begin{tabular}{llp{6.5cm}p{8cm}}
-    \toprule
-    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representative} \\
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{DiskChecker} method}
+\label{DiskCheckerEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
-	\multirow{3}{*}{\texttt{threshold}} & $vEC_1$: & $0 < \texttt{warnThreshold} \leq x < 1$  & $0.5$ \\    
+	\texttt{threshold} & $vEC_1$ & $0 < \texttt{warnThreshold} \leq \texttt{threshold} < 1$  & $\texttt{warnThreshold} = \texttt{threshold} = 0.5$
     
-    \\[-1em] 
-    & $iEC_1$: & $x \leq 0$ & $0$ \\ 
+   \\\cline{2-4}   
+   
+    & $iEC_1$ & $\texttt{threshold} \leq 0$ & $0$
     
-    \\[-1em]
-    & $iEC_2$: & $x \geq 1$ & $1$ \\
+  \\\cline{2-4}   
+  
+    & $iEC_2$ & $\texttt{threshold} \geq 1$ & $1$
     
-    \\[-1em]
-    & $iEC_3$: & $0 < x < \texttt{warnThreshold} < 1$ & $0.5$ (while \texttt{warnThreshold} is $0.6$) \\
+    \\\cline{2-4}   
     
-    \\[-1em] \hline 
+    & $iEC_3$ & $0 < \texttt{threshold} < \texttt{warnThreshold} < 1$ & $0 < \texttt{warnThreshold} - 0.1 < 1$ 
+    
+   \\\hline 
 	   
-    \multirow{3}{*}{\texttt{warnThreshold}} & $vEC_1$: & $x \leq \texttt{threshold}$  & $0.5$ (while \texttt{threshold} is $0.5$) \\    
+    \texttt{warnThreshold} & $vEC_1$: & $\texttt{warnThreshold} \leq \texttt{threshold}$  & \texttt{threshold}
     
-    \\[-1em] 
-    & $iEC_1$: & $x > \texttt{threshold}$ & $0.6$ (while \texttt{threshold} is $0.5$) \\  
+    \\\cline{2-4}   
+    
+    & $iEC_1$ & $\texttt{warnThreshold} > \texttt{threshold}$ & \texttt{threshold} + $0.1$
+    
+     \\  
     
     \bottomrule
   \end{tabular}
@@ -207,7 +654,7 @@ Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by c
 
 \begin{table*}
   \caption{Test cases of \texttt{DiskChecker} method}
-  \label{tab:DiskCheckerTestCases}
+  \label{DiskCheckerTestCases}
   \centering
   \begin{tabular}{cccccc}
     \toprule
@@ -227,39 +674,123 @@ Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by c
   \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{checkDir(File dir)}}
+\subsubsection{\texttt{checkDir}}
+\hfill\\
+\texttt{checkDir} method, taking only one \texttt{File} abject as parameter, is used to perform several checks involving a directory, verifying disk usage, write and read permissions or the exceeding of the disk usage threshold. 
+
+It returns the disk usage fraction \texttt{usage}, defined as following: 
+\begin{equation}
+\label{eqn:checkDirUsage}
+\texttt{usage} = 1 - \dfrac{\texttt{usableSpace}}{\texttt{totalSpace}}
+\end{equation}
+
+All valid and invalid equivalence classes are reported in table \textbf{\cref{checkDirEq}}, while method signature is reported in \textbf{\cref{checkDirSignature}}. Test cases are described in \textbf{\cref{checkDirTestCases}}.
+
+During equivalence class definitions, it was assumed that BookKeeper's user is \textit{not} \texttt{root} user.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{checkDir}}, label={checkDirSignature}]
+public float checkDir(File dir) throws DiskErrorException
+\end{lstlisting}
 
 \begin{table*}
-  \caption{Equivalence classes and representatives of \texttt{checkDir} method}
-  \label{tab:checkDirEqClass}
-  \centering
-  \begin{tabular}{llp{6.5cm}p{8cm}}
-    \toprule
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{checkDir} method}
+\label{checkDirEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+
     \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
-	\multirow{15}{*}{\texttt{dir}} & $vEC_1$: & Valid \texttt{File} object representing a valid directory (existent, readable and writeable). & \texttt{IOUtils.createTempDir("directoryFile", "test")} \\    
+	\texttt{dir} & $vEC_1$ & A not-\texttt{null} \texttt{File} object, which: 
+	
+	\begin{itemize}
+	\item Represents a valid directory
+	\item Exists
+	\item BookKeeper's user has read permissions
+	\item BookKeeper's user has write permissions
+	\end{itemize}
+	
+	& \texttt{createTempDir("directoryFile", "test")}   
     
-    \\[-1em] 
-    & $vEC_2$: & Valid \texttt{File} object representing a not existent, but makable, directory. & \texttt{new File("./makeMultiple/dir/path")} \\ 
+    \\\cline{2-4}   
+    & $vEC_2$ & A not-\texttt{null} \texttt{File} object, which: 
     
-    \\[-1em] 
-    & $iEC_1$: & Valid \texttt{File} object which does not represent a directory, that is it can be a regular file, a symbolic link, a character device file etc. & \texttt{new File("/dev/zero")} \\ 
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Not exists
+	\item BookKeeper's user has write permissions to make that directory
+	\end{itemize}
     
-    \\[-1em]
-    & $iEC_2$: & Valid \texttt{File} object representing a non-existent and non-makable directory. & \texttt{new File("/root/notMakable")} \\
+    & \texttt{new File("./makeMultiple/dir/path")}
+    
+    \\\cline{2-4}   
+    & $iEC_1$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item It does \textbf{not} represent a directory, that is it can be one of the following:
+	\begin{enumerate}
+	\item regular file
+	\item symbolic link
+	\item character device file
+	\item ...
+	\end{enumerate}
+	\end{itemize}
+    
+    & \texttt{new File("/dev/zero")}
+    
+   \\\cline{2-4}   
    
-    \\[-1em]
-    & $iEC_3$: & Valid \texttt{File} object representing an existent, not readable directory. & \texttt{new File("/root")} \\
+    & $iEC_2$ & A not-\texttt{null} \texttt{File} object, which: 
     
-    \\[-1em]
-    & $iEC_4$: & Valid \texttt{File} object representing an existent, not writeable directory. & \texttt{new File("/home")} \\    
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Not exists
+	\item BookKeeper's user has \textbf{not} write permissions to make that directory
+	\end{itemize}
+	
+    & \texttt{new File("/root/notMakable")}
+   
+    \\\cline{2-4}   
     
-    \\[-1em]
-    & $iEC_5$: & Valid \texttt{File} object representing an invalid directory (from file system point of view because, for example, it contains forbidden characters).  & \texttt{new File("$\setminus$u0000")} \\       
+    & $iEC_3$ & A not-\texttt{null} \texttt{File} object, which: 
     
-	\\[-1em]
-    & $iEC_6$: & A \texttt{null} object. & \texttt{null} \\     
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Exists
+	\item BookKeeper's user has \textbf{not} read permissions
+	\end{itemize}
+    
+    & \texttt{new File("/root")}
+    
+    \\\cline{2-4}   
+    & $iEC_4$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Exists
+	\item BookKeeper's user has \textbf{not} write permissions
+	\end{itemize}
+    
+    & \texttt{new File("/home")} 
+    
+    \\\cline{2-4}   
+    
+    & $iEC_5$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item Does not represent a valid directory (from file system point of view) because contains forbidden characters like:
+	\begin{enumerate}
+	\item For NTFS file system: \begin{verbatim} \ / : * ? < > |  \end{verbatim} 
+	\item For Btrfs, ext4, ext3, XFS file systems: \begin{verbatim} NULL  /  \end{verbatim} 
+	\end{enumerate}
+	\end{itemize}
+    
+    & \texttt{new File("$\setminus$u0000")}  (\texttt{NULL})
+    
+	\\\cline{2-4}   
+    & $iEC_6$ & A \texttt{null} object. & \texttt{null} \\     
     
     \bottomrule
   \end{tabular}
@@ -267,7 +798,7 @@ Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by c
 
 \begin{table*}
   \caption{Test cases of \texttt{checkDir} method}
-  \label{tab:checkDirTestCases}
+  \label{checkDirTestCases}
   \centering
   \begin{tabular}{cccccc}
     \toprule
@@ -294,42 +825,143 @@ Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by c
   \end{tabular}
 \end{table*}
 
-%\subsubsection{\texttt{getTotalDiskSpace(List<File> dirs)}}
+\subsubsection{\texttt{getTotalDiskUsage}}
+
+\texttt{getTotalDiskUsage} is used to compute disk usage fraction, already defined in \textbf{\ref{eqn:checkDirUsage}}, taking as input a list of directories.
+
+All valid and invalid equivalence classes are reported in table \textbf{\cref{getTotalDiskUsageEq}}, while method signature is reported in \textbf{\cref{getTotalDiskUsageSignature}}
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{getTotalDiskUsage}}, label={getTotalDiskUsageSignature}]
+public float getTotalDiskUsage(List<File> dirs) throws IOException
+\end{lstlisting}
 
 \begin{table*}
-  \caption{Equivalence classes and representatives of  \texttt{getTotalFreeSpace} and \texttt{getTotalDiskSpace} methods}
-  \label{tab:libraries}
-  \begin{tabular}{llp{10cm}p{5cm}}
-    \toprule
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{getTotalDiskUsage} method}
+\label{getTotalDiskUsageEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+
     \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
-	\multirow{4}{*}{\texttt{dir}} & $vEC_1$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a valid (existent and readable) directory. & \textit{See the code}
+	\texttt{dirs} & $vEC_1$ & A not-\texttt{null} \texttt{List<File>} object, which: 
+	
+	\begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\forall x \in dirs$ is true that:
+	\begin{itemize}
+	\item $x$ exists
+	\item $x$ represents a valid directory
+	\item BookKeeper's user has permissions to read $x$ 
+	\end{itemize}
+	\end{itemize}
+	
+	& \textit{(see the code)}
     
-    \\[-1em] 
-    & $vEC_2$: & A valid empty \texttt{List<File>} object. & \texttt{new ArrayList<>()}\\ 
+    \\\cline{2-4}   
+    & $iEC_1$ & A not-\texttt{null} \texttt{List<File>} object, where: 
     
-    \\[-1em] 
-    & $iEC_1$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object does not represent a directory, that is it can represent regular file, symbolic link, character device file etc. & \textit{See the code} \\
+    \begin{itemize}
+	\item $\texttt{dirs.size()} = 0$
+	\end{itemize}
     
-	\\[-1em] 
-    & $iEC_2$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object represent a not existent directory. & \textit{See the code} \\
-        
-    \\[-1em] 
-    & $iEC_3$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object represent an existent but not readable directory. & \textit{See the code} \\
-        
-    \\[-1em] 
-    & $iEC_3$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object represent an invalid directory (from file system point of view). & \textit{See the code} \\
-        
-    \\[-1em] 
-    & $iEC_3$: & A valid non-empty \texttt{List<File>} object in which at least one \texttt{File} object is null. & \textit{See the code} \\
-              
-	\\[-1em]
-    & $iEC_5$: & A \texttt{null} object. & \texttt{null} \\     
+    & \texttt{new new ArrayList<>()}
+    
+    \\\cline{2-4}   
+    & $iEC_2$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x$ is not a directory, that is $x$ can be:
+	\begin{enumerate}
+	\item regular file
+	\item symbolic link
+	\item character device file
+	\item ...
+	\end{enumerate}
+	\end{itemize}
+   
+    & \textit{(see the code)}
+    
+    \\\cline{2-4}   
+    & $iEC_3$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x$ not exist
+	\end{itemize}
+   
+    & \textit{(see the code)}
+   
+    \\\cline{2-4}   
+    
+    & $iEC_4$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x = \texttt{null}$
+	\end{itemize}
+   
+    & \textit{(see the code)}
+    
+    \\\cline{2-4}   
+    & $iEC_5$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : $ BookKeeper's user has not permissions to read $x$ 
+	\end{itemize}
+   
+    & \textit{(see the code)}
+    
+     \\\cline{2-4}   
+    & $iEC_6$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x $ does not represent a valid directory (from file system point of view).
+	\end{itemize}
+    
+    & \textit{(see the code)}
+    
+	\\\cline{2-4}   
+    & $iEC_7$ & A \texttt{null} object. & \texttt{null} \\     
     
     \bottomrule
   \end{tabular}
 \end{table*}
+
+\subsubsection{\texttt{getTotalDiskSpace} -- \texttt{getTotalFreeSpace}}
+\hfill\\
+Observing both the implementations and the signatures of these last methods, called \texttt{getTotalDiskSpace} and \texttt{getTotalFreeSpace}, is easy to understand their meaning and aim, however, if we look at the code carefully, we will note several defects that must be taken into account during test activities:
+
+\begin{enumerate}
+\item Unexpectedly, comments of both methods are the same, although they perform different activities; in other words, methods comments "\textit{lie}", because they do not describe what the functions truly do. 
+
+The only way to build our test set is to observe method implementations ignoring comments, adopting a pure white-box approach. 
+
+This consideration is true for \texttt{getTotalDiskSpace}. 
+
+For \texttt{getTotalFreeSpace} method, comment is just imprecise.
+
+\item \texttt{getTotalFreeSpace} method signature "\textit{lies}" too. In fact, although we would expect that the method returns "\textit{total free space}" of a set of directories, observing the implementation, is easy to understand that it returns, instead, the \textit{total usable space} of a set of directories. 
+
+Since, usable space and free space have different meaning, this erroneous signature is the reason according to which many of our test cases failed.
+
+\end{enumerate}
+
+An other defect, not strictly related to our testing activities, is that methods implementations are the same (except one line). In other words, this is a case of code duplication. 
+
+Although some differences (an empty \texttt{List<File>} object is a valid input), equivalence classes of both these methods are the same of the \texttt{getTotalDiskUsage} method, already described in \textbf{\ref{getTotalDiskUsageEq}}.
+
+
+
+
+
+
+
 
 
 
@@ -363,34 +995,7 @@ Using the previously given rules, we get $1 \times 1 = 1$ valid test cases (by c
 
 
 
-\begin{table*}
-  \caption{Equivalence classes and representatives of \texttt{getTotalDiskUsage}, \texttt{getTotalFreeSpace}, \texttt{getTotalDiskSpace} methods}
-  \label{tab:libraries}
-  \begin{tabular}{llp{10cm}p{5cm}}
-    \toprule
-    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
-    \midrule
-    
-	\multirow{4}{*}{\texttt{dir}} & $vEC_1$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a valid (existent, readable and writeable) directory. & - \\    
-    
-    \\[-1em] 
-    & $iEC_1$: & A validgfdg non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents a not existent directory. & - \\ 
-    
-    \\[-1em] 
-    & $iEC_2$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which represents an existent, not readable and not writeable directory. & - \\ 
-    
-    \\[-1em] 
-    & $iEC_3$: & A valid non-empty \texttt{List<File>} object containing \texttt{File} objects every of which not represents a directory, that is it can represent regular file, symbolic link, character device file etc. & - \\ 
-    
-    \\[-1em]
-    & $iEC_4$: & A valid empty \texttt{List<File>} object. & \texttt{new ArrayList<>()} \\
-    
-	\\[-1em]
-    & $iEC_5$: & A \texttt{null} object. & \texttt{null} \\     
-    
-    \bottomrule
-  \end{tabular}
-\end{table*}
+
 
 \subsection{Adequacy Criteria}
 
@@ -457,49 +1062,10 @@ According to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation 
 
 
 
-\subsection{Equivalence Class Partitioning}
-
-\subsubsection{\texttt{onClusterChanged}}
-
-\begin{lstlisting}[frame=lines, caption={\texttt{onClusterChanged} method signature.}]
-Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBookies, Set<BookieSocketAddress> readOnlyBookies)
-\end{lstlisting}
 
 
 
 
-\begin{table}[h!]
-  \caption{Equivalence classes and representatives of \texttt{onClusterChanged} method}
-  \centering
-  \begin{tabular}{llp{7cm}p{7cm}}
-  
-    \toprule
-    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
-    \midrule
-    
-    \\
-	\multirow{7}{*}{\texttt{writableBookies}} & $vEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing valid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
-    
-    \\
-    & $iEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing \texttt{null} items or invalid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
-    
-    \\
-    & $iEC_2$: & \texttt{null} object & \texttt{null} \\    
-    
-    \hline
-    
-    \\
-    \multirow{7}{*}{\texttt{readOnlyBookies}} & $vEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing valid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
-   
-     \\
-    & $iEC_1$: & Valid \texttt{Set<BookieSocketAddress>} object (size $\geqslant 0$) containing \texttt{null} items or invalid \texttt{BookieSocketAddress} objects. & \textit{(see the code)} \\    
-    
-    \\
-    & $iEC_2$: & \texttt{null} object & \texttt{null} \\    
-    
-    \bottomrule
-  \end{tabular}
-\end{table}
 
 \begin{table}[h!]
   \caption{Test cases of \texttt{onClusterChanged} method}
@@ -531,154 +1097,13 @@ Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBooki
 \end{table}
 
 
-\subsubsection{\texttt{newEnsemble}}
-
-\begin{lstlisting}[frame=lines,basicstyle=\fontsize{8}{9}\selectfont]
-public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)
-\end{lstlisting}
-
-According to \texttt{bookkeeper} documentation \citep{EnsemblePlacementPolicy}, \texttt{newEnsemble} method takes up to $5$ parameters and is used to build an ensemble made up of several bookies. 
-\begin{description}
-\item[\texttt{ensembleSize}] Represents the ensemble size.
-\item[\texttt{writeQuorumSize}] the value of write quorum size
-\item[\texttt{ackQuorumSize}] the value of ack Quorum Size
-\item[\texttt{customMetadata}] user added metadata. This data are not managed directy by \texttt{DefaultEnsemblePlacementPolicy} class
-\item[\texttt{excludeBookies}] ookies that should not be considered as targets for the new ensemble.
-\end{description}
-
-is used to build an ensemble made up \texttt{ensembleSize} bookies which takes up to $5$ parameters:
-
-\equivalenceClassesTable{Equivalence classes and representatives of \texttt{newEnsemble} method}{
-  
-    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
-    \midrule
-    
-    \\
-	\multirow{25}{*}{\texttt{ensembleSize}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
-  
-
-\\
-	\multirow{25}{*}{\texttt{writeQuorumSize}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
-	
-	\\
-	\multirow{25}{*}{\texttt{ackQuorumSize}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
-	
-	\\
-	\multirow{25}{*}{\texttt{customMetadata}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
-	
-	\\
-	\multirow{25}{*}{\texttt{excludeBookies}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:\\
-
-
-}
 
 
 
 
 
 
- According to method signature, if  not enough bookies are available to build an ensemble of size \texttt{ensembleSize}, a \texttt{BKNotEnoughBookiesException} is thrown.
 
-. Morevoer, 
-
-Choose numBookies bookies for ensemble. If the count is more than the number of available nodes, BKException.BKNotEnoughBookiesException is thrown.
-
-The implementation should respect to the replace settings. The size of the returned bookie list should be equal to the provide ensembleSize. 
-
-
-The @NotNull Annotation is, actually, an explicit contract declaring the following:
-
-A method should not return null.
-A variable (like fields, local variables, and parameters) cannot should not hold null value.
-
-
-
-
-
-
-\subsubsection{\texttt{replaceBookie}}
-
-\equivalenceClassesTable{Equivalence classes and representatives of \texttt{updateBookieInfo} method}{
-  
-    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
-    \midrule
-    
-
-
-}
-
-
-\subsubsection{\texttt{updateBookieInfo}}
-
-According to \texttt{DefaultEnsemblePlacementPolicy} interface's documentation\cite{EnsemblePlacementPolicy}, \texttt{updateBookieInfo} is used to update bookie info details taking only one input parameter, a \texttt{Map<BookieSocketAddress, BookieInfo>} object. 
-Method signature is the following:
-
-\begin{lstlisting}[frame=lines,caption={\texttt{onClusterChanged} method signature.}]
-public void updateBookieInfo(Map<BookieSocketAddress, BookieInfo> bookieInfoMap)
-\end{lstlisting}
-
-\equivalenceClassesTable{Equivalence classes and representatives of \texttt{updateBookieInfo} method}{
-  
-    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
-    \midrule
-    
-    \\
-	\multirow{25}{*}{\texttt{bookieInfoMap}} & $vEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. \newline In particular, for any \texttt{BookieSocketAddress} object is true that:
-	
-	\begin{enumerate}
-    \item \texttt{port} field is $ \geqslant 0$;
-    \item \texttt{hostname} field is not \texttt{null};
-    \end{enumerate}
-    
-    Moreover, for all \texttt{BookieInfo} object is true that:
-    
-    \begin{enumerate}
-    \item \texttt{totalDiskSpace} field is $ \geqslant 0$;
-    \item \texttt{freeDiskSpace} field is $ \geqslant 0$;
-    \item \texttt{freeDiskSpace} $\leqslant$ \texttt{totalDiskSpace};
-    \end{enumerate}
-	
-	& \textit{(see the code)} \\    
-    
-    \\
-    & $iEC_1$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) in which at least one invalid \texttt{(BookieSocketAddress, BookieInfo)} pair object is present; for example, there is one pair in the form \texttt{(BookieSocketAddress, null)}, \texttt{(null, BookieInfo)} or \texttt{(null, null)}. & \textit{(see the code)} \\    
-    
-   \\
-    & $iEC_2$: & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) in which at least one \textbf{malformed} \texttt{(BookieSocketAddress, BookieInfo)} pair object is present. \newline In particular, there is at least one \texttt{BookieSocketAddress} in which:
-    \begin{enumerate}
-    \item \texttt{port} field is $ < 0$.
-    \item \texttt{hostname} field is \texttt{null}.
-    \end{enumerate}
-    
-    Moreover, there is at least one \texttt{BookieInfo} in which:
-    
-    \begin{enumerate}
-    \item \texttt{totalDiskSpace} field is $ < 0$
-    \item \texttt{freeDiskSpace} field is $ < 0$
-     \item \texttt{freeDiskSpace} $>$ \texttt{totalDiskSpace};
-    \end{enumerate}
-    
-    & \textit{(see the code)} \\     
-    
-    \\
-    & $iEC_3$: & \texttt{null} object. & \texttt{null} \\    
-}
-
-\AndreaTable{Test cases of \texttt{updateBookieInfo} method}{cp{8cm}p{5.5cm}p{5.5cm}c}{
-
-\textbf{Test Case} & \textbf{Parameter} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
-    & \texttt{bookieInfoMap} & & &\\
-    \midrule
-    
-	$\textit{Valid}_1$ & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $= 0$). & Any Exception & Any Exception & \ding{51} \\\\
-	
-	$\textit{Valid}_2$ & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs. & Any Exception & Any Exception & \ding{51} \\\\
-
-   $\textit{Valid}_2$ & A not null \texttt{Map<BookieSocketAddress, BookieInfo>} object (size $\geqslant 0$) containing valid \texttt{(BookieSocketAddress, BookieInfo)} objects pairs.\newline The \texttt{isWeighted} field of \texttt{DefaultEnsemblePlacementPolicy} object is set to \texttt{false} & Any Exception & Exception & \ding{55} \\\\
-
-
-
-}
 
 
 
