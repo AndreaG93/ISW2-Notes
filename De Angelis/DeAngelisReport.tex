@@ -15,8 +15,9 @@
 \usepackage{adjustbox}
 \usepackage[nameinlink]{cleveref}
 
-\setcounter{tocdepth}{3}
-\setcounter{secnumdepth}{3}
+\expandafter\newcommand\csname r@tocindent4\endcsname{4in}
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
 
 \lstset{
 language=Java,
@@ -151,7 +152,9 @@ Currently there are 3 implementations available by default. They are:
 
 In particular, \texttt{DefaultEnsemblePlacementPolicy} class encapsulates the simplest algorithm for bookie selection for ensemble creation because it, simply, picks bookies randomly in order to build an ensemble. 
 
-\subsubsection{\texttt{initialize}}
+\subsubsection{Methods testing analysis}
+
+\paragraph{\texttt{initialize}}
 \hfill\\
 According to documentation, after the creation of an \texttt{Default\-EnsemblePlacementPolicy} object's instance, bookKeeper client have to call \texttt{initialize} method, which signature is reported in \textbf{\cref{initializeSignature}}, in order to initialize the placement policy. 
 
@@ -170,7 +173,7 @@ Therefore, in order to test \texttt{initialize} method, we have choose to use a 
 
 Oblivious, we have use \textbf{Mockito framework}\footnote{\url{https://site.mockito.org/}} to manage \texttt{conf} parameter's return values.
 
-All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respectively, are reported in \textbf{\cref{initializeEq}}.
+All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respectively, are reported in \textbf{\cref{initializeEq}}. We have developed $2$ valid test cases and $1$ negative test case. All test passed.
 
 \begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{initialize}}, label={initializeSignature}]
 EnsemblePlacementPolicy initialize(ClientConfiguration conf,
@@ -236,7 +239,7 @@ EnsemblePlacementPolicy initialize(ClientConfiguration conf,
 \end{table*}
 
 
-\subsubsection{\texttt{newEnsemble}}
+\paragraph{\texttt{newEnsemble}}
 \hfill\\
 Documentation \citep{EnsemblePlacementPolicy} reports that \texttt{newEnsemble} method is used to build an ensemble made up of several bookies. Method signature, shown below in \textbf{\cref{newEnsembleSignature}}, reports that it takes up to $5$ parameters and return an ensemble which is represented by a \texttt{List<BookieSocket\-Address>} object. 
 
@@ -363,7 +366,7 @@ For this method, we have developed $2 \times 1 \times 1 \times 1 \times 2 = 4$ v
 \end{table*}
 
 
-\subsubsection{\texttt{onClusterChanged}}
+\paragraph{\texttt{onClusterChanged}}
 \hfill\\
 \texttt{onClusterChanged} method is used to update the view of the cluster, that is to specify what bookies are available as \textit{writeable} and what bookies are available as \textit{read-only}; this operation is necessary to populate, or update, \texttt{knownBookies} set which, as already said, is used to pick up bookies during \texttt{newEnsemble} invocation. According to documentation, \texttt{onClusterChanged} should be invoked when any changes happen in the cluster, returning a list of \textit{failed} (or \textit{dead}) bookies during this cluster change. 
 
@@ -481,7 +484,7 @@ Combining the representatives of the equivalence classes, we have developed are 
 \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{updateBookieInfo}}
+\paragraph{\texttt{updateBookieInfo}}
 \hfill\\
 According to \texttt{DefaultEnsemblePlacementPolicy} interface's documentation \cite{EnsemblePlacementPolicy}, \texttt{updateBookieInfo} is used to update bookie info details, taking only one input parameter, a \texttt{Map<BookieSocketAddress, BookieInfo>} object. 
 
@@ -566,7 +569,7 @@ void updateBookieInfo(Map<BookieSocketAddress,BookieInfo> bookieInfoMap)
 \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{replaceBookie}}
+\paragraph{\texttt{replaceBookie}}
 \hfill\\
 Documentation reports that \texttt{replaceBookie} is choose randomly a bookie form \texttt{knownBookies} set, if available, in order to replace it with a bookie passed as parameter. 
 
@@ -687,7 +690,7 @@ BookieSocketAddress replaceBookie(int ensembleSize,
 \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{Other methods}}
+\paragraph{\texttt{Other methods}}
 \hfill\\
 To be precise, \texttt{DefaultEnsemblePlacementPolicy} class contains many other methods not analysed in this report because either they does nothing or they return always the same value regardless input parameters.
 
@@ -699,6 +702,136 @@ Those methods are:
 \item[\texttt{reorderReadSequence}] Returns always a \texttt{WriteSet} object which is passed as parameter.
 \end{description}
 
+Oblivious, for purposes related to our adequacy criteria, we have developed one test case for each above method, passing random values as parameters.
+
+\subsubsection{Adequacy Criteria}
+\hfill\\
+Is our test set $T$ good enough? Has \texttt{DefaultEnsemblePlacementPolicy} class been tested thoroughly?
+
+In general, test adequacy refers to the \textit{goodness} of a test set, which must be measured against a quantitative criterion. As known, a test adequacy criterion could be based either on \textit{requirements} or the \textit{implementation} of the program under test. Particularly, for all test objects analysed in this report, we have adopted several \textbf{white-box} test adequacy criteria, that is depend solely on the implementation of our test objects.
+
+\paragraph{Statement Coverage}
+\hfill\\
+The statement coverage of a test set $T$ is computed as following\cite{AngelisBook}:
+
+\begin{equation} 
+\label{StatementCoverage}
+\textbf{Statement Coverage} = \dfrac{\abs{S_c}}{\abs{S_e} - \abs{S_i}}
+\end{equation}
+
+Where:
+\begin{description}
+\item[$S_c$] is the set of statements covered.
+\item[$S_i$] is the set of unreachable statements.
+\item[$S_e$] is the set of statements in the program.
+\end{description}
+
+Let's start with our test set $T_1$, that is the test set containing all valid and invalid test cases built during the analysis of the equivalence classes made previously.
+
+According to \texttt{sonarcloud} and \texttt{JaCoCo} reports, our test set $T_1$ is able to cover up to $72$ lines statements out of a total of $82$, giving to us a statement coverage equal to $0.963$ ($96.3\%$)
+
+To improve statement coverage, we have add following unit test, obtaining test set $T_2$:
+\begin{itemize}
+\item \texttt{additionalTestCase\_1()} (\texttt{TestOnClusterChanged} class)
+\end{itemize}
+
+Fortunately, test set $T_2$ is able to cover up to $81$ lines statements out of a total of $82$. 
+
+However, we are unable to cover all statements because, we believe, in \texttt{newEnsemble} method is present an \textit{unreachable} statements, because it falls on an \textit{infeasible path}, that is a path that would never be reached by any test set with any type of input data. 
+
+Therefore, since $\abs{S_i} = 1$, according to \textbf{\cref{StatementCoverage}}, statement coverage is equal to $1$ ($100\%$).
+
+Since statement coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the statement coverage criterion}.
+
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
+According to \cite{AngelisBook}, a \textit{decision} is considered covered if the flow of control has been diverted to all possible destinations that correspond to this decision, i.e. all outcomes of the decision have been taken. 
+
+This implies that, for example, the expression in the \texttt{if} or \texttt{while} statement has evaluated to \texttt{true} in some execution and to \texttt{false} in the same or another execution. Note that each \texttt{if} and each \texttt{while} contribute to \textit{one} decision whereas a \texttt{switch} may contribute to more than one \cite{AngelisBook}.
+
+Decision coverage of a test set $T$ is computed as following\cite{AngelisBook}:
+
+\begin{equation} 
+\label{DecisionCoverage}
+\textbf{Decision Coverage} = \dfrac{\abs{D_c}}{\abs{D_e} - \abs{D_i}}
+\end{equation}
+
+Where:
+\begin{description}
+\item[$D_c$] is the set of decisions covered.
+\item[$D_i$] is the set of unreachable decisions.
+\item[$D_e$] is the set of decisions in the program.
+\end{description}
+
+
+According to our analysis, our test set $T_2$ is able to cover $14$ decisions out of a total of $15$. In \texttt{newEnsemble} method, there is an unreachable decisions, therefore, since $\abs{D_i} = 1$, our test set $T_2$ give to us a decision coverage equal to $1$ ($100\%$).
+
+Since decision coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the decision coverage criterion}.
+
+\paragraph{Condition coverage}
+\hfill\\
+Unlike decision coverage, condition coverage ensures that each simple condition within a \textit{compound} condition has assumed both values \texttt{true} and \texttt{false}\cite{AngelisBook}. 
+
+Condition coverage of a test set $T$ is computed as following\cite{AngelisBook}:
+
+\begin{equation} 
+\label{ConditionCoverage}
+\textbf{Condition Coverage} = \dfrac{\abs{C_c}}{\abs{C_e} - \abs{C_i}}
+\end{equation}
+
+Where:
+
+\begin{description}
+\item[$C_e$] the set of simple conditions in the program.
+\item[$C_c$] the set of of simple conditions covered  by our test set $T$.
+\item[$C_i$] the set infeasible simple conditions.
+\end{description}
+
+Our test set $T_2$ is able to cover $33$ decisions out of a total of $34$. Unfortunately, in \texttt{newEnsemble} method there is an infeasible conditions (a simple condition inside a \texttt{while} statement which is never \texttt{false}), therefore, since $\abs{C_i} = 1$, our test set $T_2$ give to us a condition coverage equal to $1$ ($100\%$).
+
+Since condition coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the condition coverage criterion}.
+
+\subsubsection{Mutation Analysis}
+\hfill\\
+So, mutation testing represents a very powerful technique to achieve two goals\cite{mutation}:
+\begin{enumerate}
+\item Evaluating test suite quality.
+\item Once we have a good test suite, executing its test cases against  the original program to find errors.
+\end{enumerate}
+
+In mutation analysis, from a program $p$, a set of faulty programs $p_m$, called \textit{mutants}, is generated by a few single syntactic changes to the original program $p$. Assume that a test set $T$ is supplied to the system. In this case each, mutant $p_m$ will then be run against this test set $T$. If the result of running $p_m$ is different from the result of running $p$ for any test case in $T$, then the mutant $p_m$ is said to be \textit{killed}, otherwise, it is said to have \textit{survived}\cite{mutation}.
+
+Our objective, is to improve our test set $T$  providing additional test inputs (or improving existing ones) to kill these surviving mutants.
+
+As known, to evaluate the goodness of a test suite, an adequacy criterion, known as the \textit{Mutation Score} (or \textit{Mutation Coverage}), is used. 
+
+So, according to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation coverage of our $T_2$ test set is equal to $28$, out of a total of $41$ (mutation score $68.29 \%$). This result means that, after that each mutant is been run against our test set $T_2$, some mutants \textit{survived}. 
+
+Therefore, to improving our test suite, we have add following unit tests to our test set $T_2$:
+
+\begin{itemize}
+\item \texttt{additionalTestCase\_1()} (\texttt{TestInitialize} class)
+\item \texttt{additionalTestCase\_1()} (\texttt{TestOther} class)
+\end{itemize}
+
+Moreover, we have improved following unit test:
+
+\begin{itemize}
+\item \texttt{test\_1} (\texttt{TestOther} class)
+\item \texttt{test\_3} (\texttt{TestOther} class)
+\item \texttt{test\_4} (\texttt{TestOther} class)
+\end{itemize}
+
+After these changes, with our new test set $T_3$, we have killed $4$ extra mutants, obtaining a mutation coverage equal to $32$, out of a total of $41$ (mutation score $78.04 \%$).
+
+As known, the goal of mutation analysis is to raise the mutation score to $1$, indicating that a test set $T$ is sufficient to detect all the faults denoted by the mutants\cite{mutation}. However, this aim is out the scope of our project.
+
+\subsubsection{Conclusions}
+
+Finally, using our tests set $T_3$, $23$ test, out of a total of $86$, failed, revealing the presence of several bugs, confirming results made by defect prediction model.
+
+
+\newpage
 \subsection{\texttt{DiskChecker} class testing analysis}
 
 According to BookKeeper's documentation, \texttt{DiskChecker} class is used to provide several utility functions for checking disk problems, managing all directories belonging to \textbf{ledgers}, which represents the basic unit of storage in BookKeeper\cite{BookKeeperArchitecture}. 
@@ -712,9 +845,9 @@ D_w  \leq  & D &
 
 However, for both thresholds, BookKeeper's specifications establish a default value, which is equal to $0.95$. 
 
-Using out test set $T_1$, which is retrievable from commit \texttt{bdf2fc28d2}\footnote{\url{https://github.com/AndreaG93/ISW2-bookkeeper/tree/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9}}, our testing activity reports that up to $5$ unit tests have failed, out of a total of $31$, revealing the presence of several bugs, despite its stability according to our prediction model. In following subsections, we will describe how we have build our test sets.
+\subsubsection{Methods testing analysis}
 
-\subsubsection{\texttt{DiskChecker}}
+\paragraph{\texttt{DiskChecker}}
 \hfill\\
 Obliviously, that method represents the constructor of \texttt{DiskChecker} class and takes up to $2$ parameters:
 
@@ -725,9 +858,7 @@ Obliviously, that method represents the constructor of \texttt{DiskChecker} clas
 
 All valid and invalid equivalence classes, which definition is clearly based on specifications described before, are reported in \textbf{\cref{DiskCheckerEq}}, while method signature is reported in \textbf{\cref{DiskCheckerSignature}}.
 
-We have developed $1 \times 1 = 1$ valid test cases (by combining the representatives of the valid equivalence classes) and $1 + 3 = 4$ negative test cases. Since test cases belonging to both $iEC_3$ of  \texttt{threshold} parameter and $iEC_1$ of \texttt{warnThreshold} overlap, in total $4$ test cases result from the $6$ equivalence classes.
-
-Equivalence classes are shown \textbf{\cref{DiskCheckerEq}}. while test cases are reported in \textbf{\cref{DiskCheckerTestCases}}.
+From identified equivalence classes, we have developed $1$ valid test case and $3$ negative test cases. All tests passed. Test cases are reported in \textbf{\cref{DiskCheckerTestCases}}. 
 
 \begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{DiskChecker}}, label={DiskCheckerSignature}]
 public DiskChecker(float threshold, float warnThreshold)
@@ -743,7 +874,7 @@ public DiskChecker(float threshold, float warnThreshold)
     \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
     \midrule
     
-	\texttt{threshold} & $vEC_1$ & $0 < \texttt{warnThreshold} \leq \texttt{threshold} < 1$  & $\texttt{warnThreshold} = \texttt{threshold} = 0.5$
+	\texttt{threshold} & $vEC_1$ & $0 < \texttt{warnThreshold} \leq \texttt{threshold} < 1$  & $0.5$
     
    \\\cline{2-4}   
    
@@ -755,7 +886,7 @@ public DiskChecker(float threshold, float warnThreshold)
     
     \\\cline{2-4}   
     
-    & $iEC_3$ & $0 < \texttt{threshold} < \texttt{warnThreshold} < 1$ & $0 < \texttt{warnThreshold} - 0.1 < 1$ 
+    & $iEC_3$ & $0 < \texttt{threshold} < \texttt{warnThreshold} < 1$ & $\texttt{warnThreshold} - 0.1$ 
     
    \\\hline 
 	   
@@ -781,11 +912,11 @@ public DiskChecker(float threshold, float warnThreshold)
     & \texttt{threshold} & \texttt{warnThreshold} & & &\\
     \midrule
     
-	$\textit{Valid}_1$ & $0.95$ & $0.95$ & No Exception & No Exception & \ding{51} \\
+	$\textit{Valid}_1$ & $0.5$ & $0.5$ & No Exception & No Exception & \ding{51} \\
 	
-	$\textit{Invalid}_1$ & $0$ & $0.5$ & Exception & Exception & \ding{51} \\
+	$\textit{Invalid}_1$ & $0$ & $0$ & Exception & Exception & \ding{51} \\
 	
-	$\textit{Invalid}_2$ & $1$ & $0.5$ & Exception & Exception & \ding{51} \\
+	$\textit{Invalid}_2$ & $1$ & $1$ & Exception & Exception & \ding{51} \\
     
 	$\textit{Invalid}_3$ & $0.5$ & $0.6$ & Exception & Exception & \ding{51} \\
 	
@@ -793,7 +924,7 @@ public DiskChecker(float threshold, float warnThreshold)
   \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{checkDir}}
+\paragraph{\texttt{checkDir}}
 \hfill\\
 \texttt{checkDir} method, taking only one \texttt{File} abject as parameter, is used to perform several checks involving a directory, verifying disk usage, write and read permissions or the exceeding of the disk usage threshold. 
 
@@ -803,7 +934,7 @@ It returns the disk usage fraction \texttt{usage}, defined as following:
 \texttt{usage} = 1 - \dfrac{\texttt{usableSpace}}{\texttt{totalSpace}}
 \end{equation}
 
-All valid and invalid equivalence classes are reported in table \textbf{\cref{checkDirEq}}, while method signature is reported in \textbf{\cref{checkDirSignature}}. Test cases are described in \textbf{\cref{checkDirTestCases}}.
+All valid and invalid equivalence classes are reported in table \textbf{\cref{checkDirEq}}, while method signature is reported in \textbf{\cref{checkDirSignature}}. We have developed $2$ valid test cases and $5$ negative test cases, with a total $8$ test cases, all passed. Test cases are described in \textbf{\cref{checkDirTestCases}}.
 
 During equivalence class definitions, it was assumed that BookKeeper's user is \textit{not} \texttt{root} user.
 
@@ -944,11 +1075,11 @@ public float checkDir(File dir) throws DiskErrorException
   \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{getTotalDiskUsage}}
-
+\paragraph{\texttt{getTotalDiskUsage}}
+\hfill\\
 \texttt{getTotalDiskUsage} is used to compute disk usage fraction, already defined in \textbf{\ref{eqn:checkDirUsage}}, taking as input a list of directories.
 
-All valid and invalid equivalence classes are reported in table \textbf{\cref{getTotalDiskUsageEq}}, while method signature is reported in \textbf{\cref{getTotalDiskUsageSignature}}
+All valid and invalid equivalence classes are reported in table \textbf{\cref{getTotalDiskUsageEq}}, while method signature is reported in \textbf{\cref{getTotalDiskUsageSignature}}. We have developed $1$ valid test case and $7$ negative test cases, with a total of $8$ test cases, of which $2$ failed.
 
 \begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{getTotalDiskUsage}}, label={getTotalDiskUsageSignature}]
 public float getTotalDiskUsage(List<File> dirs) throws IOException
@@ -1052,179 +1183,88 @@ public float getTotalDiskUsage(List<File> dirs) throws IOException
   \end{tabular}
 \end{table*}
 
-\subsubsection{\texttt{getTotalDiskSpace} -- \texttt{getTotalFreeSpace}}
+\paragraph{\texttt{getTotalDiskSpace} -- \texttt{getTotalFreeSpace}}
 \hfill\\
 Observing both the implementations and the signatures of these last methods, called \texttt{getTotalDiskSpace} and \texttt{getTotalFreeSpace}, is easy to understand their meaning and aim, however, if we look at the code carefully, we will note several defects that must be taken into account during test activities:
 
 \begin{enumerate}
-\item Unexpectedly, comments of both methods are the same, although they perform different activities; in other words, methods comments "\textit{lie}", because they do not describe what the functions truly do. 
+\item Unexpectedly, methods comments are the same, although they perform different activities; in other words, methods comments "\textit{lie}", because they do not describe what the functions truly do. 
 
 The only way to build our test set is to observe method implementations ignoring comments, adopting a pure white-box approach. 
 
-This consideration is true for \texttt{getTotalDiskSpace}. 
-
-For \texttt{getTotalFreeSpace} method, comment is just imprecise.
+This consideration is true for \texttt{getTotalDiskSpace} while, for \texttt{getTotalFreeSpace} method, the comment is just imprecise.\\
 
 \item \texttt{getTotalFreeSpace} method signature "\textit{lies}" too. In fact, although we would expect that the method returns "\textit{total free space}" of a set of directories, observing the implementation, is easy to understand that it returns, instead, the \textit{total usable space} of a set of directories. 
 
-Since, usable space and free space have different meaning, this erroneous signature is the reason according to which many of our test cases failed.
+Since, usable space and free space have different meaning, this erroneous signature is the reason according to which many of our test cases failed. 
 
 \end{enumerate}
 
 An other defect, not strictly related to our testing activities, is that methods implementations are the same (except one line). In other words, this is a case of code duplication. 
 
-Although some differences (an empty \texttt{List<File>} object is a valid input), equivalence classes of both these methods are the same of the \texttt{getTotalDiskUsage} method, already described in \textbf{\ref{getTotalDiskUsageEq}}.
+Although some differences (an empty \texttt{List<File>} object is a valid input), equivalence classes of both these methods are the same of the \texttt{getTotalDiskUsage} method, already described in \textbf{\ref{getTotalDiskUsageEq}}. 
 
+To test \texttt{getTotalDiskSpace} method, we have developed $2$ valid test cases and $6$ negative test cases, with a total $8$ test cases, of which $2$ failed. Likewise, we have developed the same number of tests for \texttt{getTotalFreeSpace} method too; however $3$ unit tests failed out of a total of $8$
 
+\subsubsection{Adequacy Criteria}
+\hfill\\
 
+\paragraph{Statement coverage}
+\hfill\\
 
+Our test set $T_1$, made up of all test cases built during equivalence class analysis, is able to cover up to $69$ statements out of a total of $89$, reaching a statement coverage equal to \textbf{0,775} (\textbf{77,5\%}).
 
+To improve our test set, we add following unit tests to test set $T_1$:
+\begin{enumerate}
+\item\texttt{ additionalTest\_1} (\texttt{TestDiskChecker} class).
+\item\texttt{ additionalTest\_1} (\texttt{TestCheckDir} class).
+\item\texttt{ additionalTest\_2} (\texttt{TestCheckDir} class).
+\item\texttt{ additionalTest\_3} (\texttt{TestCheckDir} class).
+\end{enumerate}
 
+With this new test set, $T_2$, we are able to cover up to $85$ statements out of a total of $89$.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
- JaCoCo \footnote{\url{https://github.com/jacoco/jacoco}} 
-
-
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\subsection{Adequacy Criteria}
-
-\subsubsection{Statement coverage}
-
-Our test set $T$ is able to cover up to $85$ statements out of a total of $89$, reaching, according to Sonarcloud report, a \textit{statement coverage} equal to \textbf{0,955} (\textbf{95,5\%}).
-
-However we believe that \texttt{DiskChecker} class contains several statements that we can consider as \textbf{unreachable} because they fall on an \textit{infeasible path}, that is a path that would never be reached by our test set $T$ with any type of input data; to be more precise, we believe that  \texttt{setDiskSpaceThreshold(float, float)} method contains up to $4$ unreachable statements. 
-
-Generally, in order to identify unreachable statements, drawing the flow-graph of the developed code and finding out the path that would never be reached is required, however we can consider as unreachable all statements of \texttt{setDiskSpaceThreshold(float, float)} method owing to following reasons:
+However, \texttt{DiskChecker} class contains a method, called \texttt{set\-Disk\-SpaceThreshold(float, float)}, which, we believe, contains up to $4$ unreachable statements. Generally, in order to identify unreachable statements, drawing the flow-graph of the developed code and finding out the path that would never be reached is required. However, in this case, we can consider as unreachable all statements of \texttt{setDiskSpaceThreshold(float, float)} method owing to following reasons:
 
 \begin{enumerate}
 \item \texttt{setDiskSpaceThreshold(float, float)} method is \textbf{never used} in the project, that is it is never called by any other method.
-\item \texttt{setDiskSpaceThreshold(float, float)} method has \textbf{no access modifier} (\textit{package private}) which means, according to Java language specification, that it is only accessible within classes in the same package, therefore that method is not visible by any test set (we are assuming that test code, generally located into \texttt{/test} directory, is always included into a different package respect to application code, which is conversely located into \texttt{/main} directory)
+\item \texttt{setDiskSpaceThreshold(float, float)} method has \textbf{no access modifier} (\textit{package private}) which means, according to Java language specification, that it is only accessible within classes in the same package, therefore that method is not visible by our test set.
 \end{enumerate}
 
-Therefore, we can conclude by stating that:
+Therefore, we can conclude by stating that $\abs{S_i} = 4$ and our test set $T_2$ gives to us a statement coverage equal to \textbf{1} (\textbf{100\%}).
 
-\begin{equation} 
-\textbf{Statement Coverage} = \dfrac{\abs{S_c}}{\abs{S_e} - \abs{S_i}} = \dfrac{85}{89-4} = 1 = 100\%
-\end{equation}
+Since statement coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the statement coverage criterion}.
 
-Since statement coverage of $T$ is $1$, we can consider $T$ as \textbf{adequate with respect to the statement coverage criterion}.
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
 
-\subsubsection{Decision coverage (Branch decision coverage)}
+According to our analysis, \texttt{DiskChecker} class contains 16 decision. Since our test set $T_2$ covers all decisions, decision coverage is equal to \textbf{1} (\textbf{100\%}). Because decision coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the decision coverage criterion}.
 
-According to \cite{FoundationSoftwareTesting}, a \textit{decision} is considered covered if the flow of control has been diverted to all possible destinations that correspond to this decision, i.e. all outcomes of the decision have been taken. This implies that, for example, the expression in the \texttt{if} or \texttt{while} statement has evaluated to \texttt{true} in some execution and to \texttt{false} in the same or another execution. Note that each \texttt{if} and each \texttt{while} contribute to \textit{one} decision whereas a \texttt{switch} may contribute to more than one.
+\paragraph{Condition coverage}
+\hfill\\
 
-According to our analysis, \texttt{DiskChecker} class contains 14 possible decisions, therefore $\abs{D_e} = 14$ where $D_e$ is the set of decisions in the program. Our test set $T$ can cover all decision, therefore $\abs{D_c} = 14$, where $D_c$ is the set of decisions covered.
+According to sonarcloud reports, our test set $T_2$ covers up to $45$ simple conditions, out of a total of $46$ with a condition coverage equal to $0.978$ ($97,8\%$).
 
-\begin{equation} 
-\textbf{Decision Coverage} = \dfrac{\abs{D_c}}{\abs{D_e} - \abs{D_i}} = \dfrac{14}{14-0} = 1 = 100\%
-\end{equation}
+Since condition coverage is less than $1$, our test set $T_2$ is \textit{not} adequate with respect to the condition coverage criterion. 
 
-Since decision coverage of $T$ is $1$, we can consider $T$ as \textbf{adequate with respect to the decision coverage criterion}.
+\subsubsection{Mutation Analysis}
+\hfill\\
 
-\subsubsection{Condition coverage}
+According to \texttt{PIT} report, mutation coverage of our $T_2$ test set is equal to $29$, out of a total of $46$ (mutation score $63.04 \%$). 
 
-Unlike decision coverage, condition coverage ensures that each simple condition within a compound condition has assumed both values \texttt{true} and \texttt{false}. 
+To build our new test set $T_3$, we added following unit tests to $T_2$:
 
-Le be given:
+\begin{itemize}
+\item \texttt{additionalTest\_1} (\texttt{TestTest} class)
+\item \texttt{additionalTest\_2} (\texttt{TestTest} class)
+\item \texttt{additionalTest\_3} (\texttt{TestTest} class)
+\end{itemize}
 
-\begin{description}
-\item[$C_e$] the set of simple conditions in the program.
-\item[$C_c$] the set of of simple conditions covered  by our test set $T$.
-\item[$C_i$] the set infeasible simple conditions.
-\end{description}
+After these changes, with our new test set $T_3$, we have killed $4$ extra mutants, obtaining a mutation coverage equal to $34$, out of a total of $41$ (mutation score $82.92 \%$).
 
-According to \texttt{JaCoCo} and sonarcloud reports, our test set $T$ covers up to $46$ simple conditions, out of a total of $46$, while $\abs{C_i} = 0$. Therefore we can say that:
+\subsubsection{Conclusions}
 
-\begin{equation} 
-\textbf{Condition Coverage} = \dfrac{\abs{C_c}}{\abs{C_e} - \abs{C_i}} = \dfrac{46}{46-0} = 1 = 100\%
-\end{equation}
-
-Since condition coverage is equal to $1$, our test set $T$ is adequate with respect to the condition coverage criterion. 
-
-
-\subsection{Mutation Analysis}
-
-%https://github.com/AndreaG93/ISW2-bookkeeper/commit/bdf2fc28d216b0adf9e467cfb51c4f334e84d5c9
-
-According to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation coverage equal to 63, con 46 
-
-
-
-
-
-
-
-
-
-\begin{table}[h!]
-  \caption{Test cases of \texttt{onClusterChanged} method}
-  \centering
-  \resizebox{\columnwidth}{!}{
-  \begin{tabular}{cp{5cm}p{5cm}p{5.5cm}p{5.5cm}c}
-    \toprule
-    \textbf{Test Case} & \multicolumn{2}{c}{\textbf{Parameter}} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
-    & \texttt{writableBookies} & \texttt{readOnlyBookies} & & &\\
-    \midrule
-    
-	$\textit{Valid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$).  & Valid \texttt{Set<BookieSocketAddress>} object (size $= 0$). & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
-	
-	$\textit{Valid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Empty \texttt{Set<BookieSocketAddress>} & Empty \texttt{Set<BookieSocketAddress>} & \ding{51} \\\\
-	
-	$\textit{Valid}_3$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object (\texttt{knownBookies} field of a \texttt{DefaultEnsemblePlacementPolicy} instance have size equal to   $5$)  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & Not empty \texttt{Set<BookieSocketAddress>} (size $= 4$) & \ding{51} \\\\
-	
-	$\textit{Invalid}_1$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\
-	
-	$\textit{Invalid}_2$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object. & Valid \texttt{Set<BookieSocketAddress>} object inside which there is one \texttt{null} reference.  & \texttt{Exception} & Empty \texttt{Set<BookieSocketAddress>} & \ding{55} \\\\	
-	
-	$\textit{Invalid}_3$ & \texttt{null} & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
-	
-	$\textit{Invalid}_4$ & Valid \texttt{Set<BookieSocketAddress>} object inside which there is $1$ valid \texttt{BookieSocketAddress} object.  & \texttt{null} & \texttt{Exception} & \texttt{Exception}  & \ding{51} \\\\	
-		
-	
-    \bottomrule
-  \end{tabular}}
-\end{table}
-
-
-
-
-
-
-
-
-
-
-
+Finally, using our test set $T_3$, $7$ tests, out of a total of $50$, failed revealing the presence of several bugs, despite its stability according to our prediction model.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{Bib}
