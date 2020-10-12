@@ -13,6 +13,7 @@
 \usepackage{url}
 \usepackage{hyperref}
 \usepackage{adjustbox}
+\usepackage{threeparttable}
 \usepackage[nameinlink]{cleveref}
 
 \expandafter\newcommand\csname r@tocindent4\endcsname{4in}
@@ -54,6 +55,7 @@ stringstyle=\color{black},
 }
 
 
+\definecolor{beaublue}{rgb}{0.74, 0.83, 0.9}
 
 
 \settopmatter{printacmref=false, printccs=false, printfolios =false}
@@ -1265,6 +1267,187 @@ After these changes, with our new test set $T_3$, we have killed $4$ extra mutan
 \subsubsection{Conclusions}
 
 Finally, using our test set $T_3$, $7$ tests, out of a total of $50$, failed revealing the presence of several bugs, despite its stability according to our prediction model.
+
+\newpage
+\section{Apache OpenJPA\texttrademark}
+
+\subsection{\texttt{SimpleRegex} class testing analysis}
+
+As the name suggests, \texttt{SimpleRegex} class is used to manage a "\textit{simple}" RegEx, that is a \textit{\textbf{Reg}ular \textbf{Ex}pression}, which represents a sequence of characters, or a \textit{pattern}, that define a search pattern used in several string-searching algorithms or during string-input validation operation; in other word, the aim of a RegEx pattern is to matches a target string.
+
+An example of RegEx is \colorbox{beaublue}{\texttt{gr(a|e)y}} which matches both \colorbox{beaublue}{\texttt{gray}} or \colorbox{beaublue}{\texttt{grey}} strings.
+
+A RegEx pattern is made up of a sequence of elements including:
+
+\begin{description}
+\item[Atoms] which represents a regular character that has a literal meaning. 
+\item[Meta-characters] which represents an element with a very special meaning, depending on context. 
+
+The majority of RegEx processor engines supports up to $14$ meta-characters including: \begin{verbatim} $ & / ( ) [ ] ^ @ \ | + - *  \end{verbatim} 
+\end{description}
+
+According to documentation, the RegEx processor engine of the \texttt{SimpleRegex} class supports only $2$ meta-characters:
+
+\begin{description}
+\item[\texttt{.}] which matches any single character.
+
+This meta-characters is known as \textit{wildcard}. For example, \colorbox{beaublue}{\texttt{a.b}} matches any string that contains an "\texttt{a}", then any other character and then "\texttt{b}", like \colorbox{beaublue}{\texttt{axb}}.
+
+\item[\texttt{.*}] which matches any string. 
+
+For example, \colorbox{beaublue}{\texttt{a.*b}} matches any string that contains an "\texttt{a}", and then the character "\texttt{b}" at some later point, like\newline  \colorbox{beaublue}{\texttt{a andrea graziani b}}.
+\end{description}
+
+\subsubsection{Methods testing analysis}
+
+\paragraph{\texttt{SimpleRegex}}
+\hfill\\
+Obliviously, that method represents the constructor of \texttt{SimpleRegex} class and takes up to $2$ parameters:
+
+\begin{description}
+\item[\texttt{expr}] A \texttt{string} object containing the RegEx.
+\item[\texttt{caseInsensitive}] To enable or disable case sensitive. 
+\end{description}
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{SimpleRegexEq}}, while method signature is shown below, in \textbf{\cref{SimpleRegexSignature}}.
+
+From identified equivalence classes, we have developed $1 \times 2 = 2$ valid test cases and $1+1+1+1+1=5$ negative test cases. Precisely, we have tested each negative test case when \texttt{caseInsensitive} is both \texttt{true} and \texttt{false}; therefore there is a total of $10$ negative test cases, then $12$ total tests, $7$ of which failed: a very bad result.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{SimpleRegex}}, label={SimpleRegexSignature}]
+public SimpleRegex(String expr, boolean caseInsensitive)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{SimpleRegex} method}
+\label{SimpleRegexEq}
+\centering
+\begin{threeparttable}[b]
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+expr & $vEC_1$ & A not-\texttt{null} \texttt{String} object which:
+
+ \begin{itemize}
+\item Is \textit{not} blank, that is $\texttt{expr.length()} > 0$ \tnote{[1]}
+\item It may contain alphanumeric characters
+\item It may contain following meta-characters \textit{only}: \tnote{[2]}
+\begin{description}
+\item[\texttt{.}]
+\item[\texttt{.*}]
+\end{description}
+\item It must not contain any \textit{escape character} \tnote{[3]}
+\end{itemize}
+
+& \texttt{a.*b}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} = 0$
+\end{itemize}
+
+& ""
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} > 0$
+\item It represents an invalid pattern because it contains both unsupported meta-characters and escape characters.
+\end{itemize}
+
+& \texttt{a.*(r|t)b\textbackslash r}
+
+\\\cline{2-4}
+
+& $iEC_3$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} > 0$
+\item It represents an invalid pattern because it contains unsupported meta-characters and no escape characters.
+\end{itemize}
+
+& \texttt{a*}
+
+\\\cline{2-4}
+
+& $iEC_4$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} > 0$
+\item It represents an invalid pattern because it contains escape characters and no unsupported meta-characters
+\end{itemize}
+
+& \texttt{\textbackslash t}
+
+\\\cline{2-4}
+
+& $iEC_5$ & \texttt{null} object. & \texttt{null}
+
+\\\hline
+
+caseInsensitive & $vEC_1$ & \texttt{true} & \texttt{true}
+
+\\\cline{2-4}
+
+& $vEC_2$ & \texttt{false} & \texttt{false}
+
+\\
+
+\bottomrule
+\end{tabular}
+   \begin{tablenotes}
+     \item[1] According to RegEx specification, an empty pattern is \textit{invalid}, because it either returns empty matches or matches with any string depending on RegEx processor engine. In other words, it has an undefined behaviour. In order to match empty strings, \texttt{(\^{}?![\textbackslash s\textbackslash S])} is used.
+     \item[2] Any other meta-character is considered as invalid because, according to \texttt{SimpleRegex} documentation, they are unsupported.
+     \item[3] An escape character is a character that invokes an alternative interpretation on the following characters in a character sequence. It is a particular case of meta-characters. For example \verb|\u00A9| is an escape character for \textsuperscript{\textcopyright}. \texttt{SimpleRegex} class doesn't support them.
+   \end{tablenotes}
+  \end{threeparttable}
+\end{table*}
+
+\paragraph{\texttt{matches}}
+\hfill\\
+This method is used to check the matching between RegEx expression and \texttt{target} string.  
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{matchesEq}}, while method signature is shown in \textbf{\cref{matchesSignature}}. We have developed $1$ valid test case and $1$ negative test case, both run twice using different values of \texttt{caseInsensitive} parameter described previously. All tests passed.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{matches}}, label={matchesSignature}]
+public boolean matches(String target)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{matches} method}
+\label{matchesEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\texttt{target} & $vEC_1$ & A not-\texttt{null} \texttt{String} object which
+	\begin{itemize}
+	\item  $\texttt{expr.length()} \geq 0$
+	\item Can contain any character. 
+\end{itemize}		
+	& \texttt{"Andrea1234\textbackslash t= "}
+    
+    \\\cline{2-4}   
+    
+    & $iEC_1$ & \texttt{null} object. & \texttt{null} 
+   
+    
+     \\  
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{Bib}
