@@ -101,6 +101,19 @@ In particular, for our testing activities involving Apache BookKeeper\texttradem
 \item[\texttt{DiskChecker}]\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} Although it has not been marked as defective, we have choose this class due to its relative high LOC value ($294$), high number of revisions ($11$) and high number of authors ($9$). Despite its presumed stability, our testing activity has found several defects inside that class. 
 \end{description}
 
+Regarding Apache OpenJPA\texttrademark, we have canalised following classes:
+
+\begin{description}
+\item[\texttt{SimpleRegex}]\footnote{\texttt{org.apache.openjpa.lib.util.SimpleRegex}} Marked as defective and, fortunately, our testing activity has discovered many defects.
+\item[\texttt{ClassUtil}]\footnote{\texttt{org.apache.openjpa.lib.util.ClassUtil}} Not been marked as defective. 
+
+We have choose this class due to its relative high LOC value ($213$) and, primarily, owing to age ($214$ weeks)  which, compared to the average age of all project's classes ($661.72$ weeks), we believe being very low. 
+
+Generally, younger classes belonging to latest releases can be affected by dormant (not discovered) defects\cite{Falessi}.
+
+Our testing activity has found very few defects inside that class. 
+\end{description}
+
 \subsection{Testing technique}
 
 In order to build our test set, we have adopted a testing technique called \textit{equivalence class partitioning}, according to which the domain of possible input data for each input data element is divided
@@ -123,6 +136,32 @@ Moreover, we have adopted following guidelines\cite{FoundationSoftwareTesting}:
 \item Every representative of an equivalence class appears in at least one test case.
 \item Representatives of invalid equivalence classes should not be combined with representatives of other invalid equivalence classes.
 \end{enumerate}
+
+\subsubsection{Notation}
+\hfill\\
+Before proceeding with our analysis, it's important to make some clarifications.
+
+For all analysed class, we have developed several test sets, every of which is denoted as $T_x$ with $x = \{1,2,3,\ldots\}$.  
+
+Moreover, is true that:
+
+\begin{equation}
+\forall x,y \in \mathbb{Z^+} : y > x  \Rightarrow T_x \subset T_y
+\end{equation}
+
+Above statement states that $T_y$ contains all test cases developed for $T_x$ including some more. Is important to precise that $T_y$ represents an "\textit{improved}" version of $T_x$ because, running $T_y$, we can achieve better results respect to our adequacy criteria. The aim of that notation is to highlight the improving of our test sets during various step of our testing activity.
+
+In particular, we have used $T_1$ to denote the initial test set developed during classes equivalence identification step. All improved test sets, denoted as $T_2$, $T_3$, $T_4$ etc., were been developed during both mutation analysis and during the improving of our results related to our adequacy criteria. For each improved test set, we will indicate which method was added or changed.
+
+\subsubsection{Existent test set removal}
+\hfill\\
+As request, we have removed all existing tests inside each aforementioned project. 
+
+To do that, we have simply exploited following \texttt{bash} command, invoked at the root directory of the each project:
+
+\begin{lstlisting}
+rm -R $(find ./ -type d -name "test") 
+\end{lstlisting}
 
 \section{Apache Bookkeeper\texttrademark}
 \subsection{\texttt{DefaultEnsemblePlacementPolicy} class testing analysis}
@@ -1268,7 +1307,6 @@ After these changes, with our new test set $T_3$, we have killed $4$ extra mutan
 
 Finally, using our test set $T_3$, $7$ tests, out of a total of $50$, failed revealing the presence of several bugs, despite its stability according to our prediction model.
 
-\newpage
 \section{Apache OpenJPA\texttrademark}
 
 \subsection{\texttt{SimpleRegex} class testing analysis}
@@ -1456,7 +1494,11 @@ public boolean matches(String target)
 
 \subsection{\texttt{ClassUtil} class testing analysis}
 
+As the name suggests, \texttt{ClassUtil} class is used to manage classes 
 
+class object
+
+ In particular, it is desigend in order to retrieve the name, the package of a specifified class and 
 
 \texttt{ClassLoader} objects are a part of the \textit{Java Runtime Environment} that dynamically loads Java classes into the \textit{Java Virtual Machine}. When a class is requested, the class loader tries to locate the class and load the class definition into the runtime using a fully qualified class name. 
 
