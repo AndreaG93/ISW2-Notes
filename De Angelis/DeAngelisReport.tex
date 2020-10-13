@@ -1449,6 +1449,288 @@ public boolean matches(String target)
   \end{tabular}
 \end{table*}
 
+
+
+
+
+
+\subsection{\texttt{ClassUtil} class testing analysis}
+
+
+
+\texttt{ClassLoader} objects are a part of the \textit{Java Runtime Environment} that dynamically loads Java classes into the \textit{Java Virtual Machine}. When a class is requested, the class loader tries to locate the class and load the class definition into the runtime using a fully qualified class name. 
+
+\texttt{ClassLoader} instances use a so-called \textit{delegation approach}: each instance of \texttt{ClassLoader} has an associated parent class loader. When requested to find a class or resource, a \texttt{ClassLoader} instance will delegate the search for the class or resource to its parent class loader before attempting to find the class or resource itself. A special class loader, called \textit{bootstrap}, is used as a parent of all the other \texttt{ClassLoader} instances. 
+
+Normally, the Java virtual machine loads classes from the local file system in a platform-dependent manner. For example, on UNIX systems, the virtual machine loads classes from the directory defined by the \texttt{CLASSPATH} environment variable. 
+
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{toClass} method}
+\label{toClassEq}
+\centering
+\begin{threeparttable}[b]
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+
+str & $vEC_1$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item Is \textit{not} blank, that is $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.\tnote{[1]}
+\item Specified \textit{binary name} must matches an existent and readable \texttt{.class} (or \texttt{.jar}) file. 
+
+In particular:
+\begin{itemize}
+\item Into specified \texttt{str} is represent a dollar signs ('\texttt{\$}') used to separate inner and outer classes
+\end{itemize}
+\end{itemize}
+
+& \texttt{"javax.swing.JSpinner\$DefaultEditor"}
+
+\\\cline{2-4}
+    
+& $vEC_2$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+\item Specified \textit{binary name} must matches an existent and readable \texttt{.class} (or \texttt{.jar}) file. 
+
+In particular:
+\begin{itemize}
+\item It is a valid \textit{binary name} containing only periods ('\texttt{.}') used to identify the package name.
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.lang.String"}
+
+\\\cline{2-4}
+
+& $vEC_3$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+\item Specified \textit{binary name} must matches an existent and readable \texttt{.class} (or \texttt{.jar}) file. 
+
+In particular:
+\begin{itemize}
+\item Specified \texttt{str} represents an array classes with one or more brackets ('\texttt{[}' and '\texttt{]}') 
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.awt.Point[][]"}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{str.length()} = 0$
+\end{itemize}
+
+& ""
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{String} object which: 
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item It represents an invalid \textit{binary name}.
+\end{itemize}
+
+& \texttt{"\$\%\&andrea..invalid..binary*-+"}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object. & \texttt{null}
+
+\\\hline
+
+resolve & $vEC_1$ & \texttt{true}\tnote{[2]} & \texttt{true}
+
+\\\cline{2-4}
+
+& $vEC_2$ & \texttt{false} & \texttt{false}
+
+\\\hline
+
+loader & $vEC_1$ & A not-\texttt{null} \texttt{ClassLoader} object which: 
+
+\begin{itemize}
+\item Must be able to load specified \texttt{.class} file; that is, loader's class paths must include a directory containing specified \texttt{str} class file.
+\end{itemize}
+
+ & \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $vEC_2$ & \texttt{null} object.\tnote{[3]} & \texttt{null}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{ClassLoader} object which: 
+
+\begin{itemize}
+\item Is unable to load specified \texttt{.class} class file. 
+\end{itemize}
+
+ & \textit{(see the code)}
+
+\\
+
+\bottomrule
+\end{tabular}
+   \begin{tablenotes}
+     \item[1] According to the \textit{The Java\texttrademark Language Specification}, any class or interface must be named by its \textit{binary name}, which must meet several constraints. 
+     
+     Examples of valid class names include:
+\begin{itemize}
+\item \texttt{java.lang.String}
+\item \texttt{javax.swing.JSpinner\$DefaultEditor}
+\item \texttt{java.security.KeyStore\$Builder\$FileBuilder\$1}
+\end{itemize}
+       
+For details, please visit: \url{https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1}
+     
+\item[2] When \texttt{true}, the specified class will be \textit{initialized} if it has not been initialized earlier. Initialization of a class consists of executing its static initializers and the initializers for static fields  declared in the class. 
+
+For details, please visit: \url{https://docs.oracle.com/javase/specs/jls/se7/html/jls-12.html}
+
+\item[3] Specified \texttt{ClassLoader} object can be \texttt{null} because, in that case, bootstrap class loader would be called.
+
+
+   \end{tablenotes}
+  \end{threeparttable}
+\end{table*}
+
+
+
+
+
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{getClassName(String)} and \texttt{getPackageName(String)} methods}
+\label{getClassNameStringGetPackageNameStringEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{fullName} & $vEC_1$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item Is \textit{not} blank, that is $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.\tnote{[1]}
+
+In particular:
+\begin{itemize}
+\item Into specified \texttt{str} is represent a dollar signs ('\texttt{\$}') used to separate inner and outer classes
+\end{itemize}
+\end{itemize}
+
+& \texttt{"javax.swing.JSpinner\$DefaultEditor"}
+
+\\\cline{2-4}
+    
+& $vEC_2$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+
+In particular:
+\begin{itemize}
+\item It is a valid \textit{binary name} containing only periods ('\texttt{.}') used to identify the package name.
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.lang.String"}
+
+\\\cline{2-4}
+
+& $vEC_3$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+
+In particular:
+\begin{itemize}
+\item Specified \texttt{str} represents an array classes with one or more brackets ('\texttt{[}' and '\texttt{]}') 
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.awt.Point[][]"}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{str.length()} = 0$
+\end{itemize}
+
+& ""
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{String} object which: 
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item It represents an invalid \textit{binary name}.
+\end{itemize}
+
+& \texttt{"\$\%\&andrea..invalid..binary*-+"}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object. & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{getClassName(Class)} and  \texttt{getPackageName(Class)} methods}
+\label{getClassNameClassGetPackageNameClassEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+cls & $vEC_1$ & A not-\texttt{null} \texttt{Class} object. & \texttt{"andrea.Test"}
+
+\\\cline{2-4}
+
+& $iEC_1$ & \texttt{null} object. & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+
+
+
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{Bib}
 
