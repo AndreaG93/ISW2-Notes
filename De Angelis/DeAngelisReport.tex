@@ -1487,10 +1487,43 @@ public boolean matches(String target)
   \end{tabular}
 \end{table*}
 
+\subsubsection{Adequacy Criteria}
+\hfill\\
 
+\paragraph{Statement coverage}
+\hfill\\
 
+Our test set $T_1$ is able to cover up to $43$ statements out of a total of $48$, reaching a statement coverage equal to \textbf{0,895} (\textbf{89,5\%}).
 
+To improve our test set, we add following unit tests to $T_1$, obtaining our new test set $T_2$:
+\begin{enumerate}
+\item\texttt{ additionalTest\_1} (into \texttt{TestMatches} class).
+\item\texttt{ additionalTest\_2} (into \texttt{TestMatches} class).
+\item\texttt{ additionalTest\_3} (into \texttt{TestMatches} class).
+\end{enumerate}
 
+Using $T_2$, we are able to cover up to $47$ statements out of a total of $48$, reaching a statement coverage equal to \textbf{0,979} (\textbf{97,9\%}).
+
+Since during our test activities we were unable to build a test set capable to cover last statement (probably \textit{unreachable}), we can state that $T_2$ in \textbf{not} adequate with respect to the statement coverage criterion.
+
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
+
+According to our analysis, \texttt{SimpleRegex} class contains $13$ decisions and our test set $T_2$ is able to cover up to $12$ of them, reaching a decision coverage equal to \textbf{0,923} (\textbf{92,3\%}). 
+
+Because decision coverage of $T_2$ is less than $1$, $T_2$ is \textbf{not} adequate with respect to the decision coverage criterion.
+
+\paragraph{Condition coverage}
+\hfill\\
+
+According to sonarcloud reports, our test set $T_2$ covers up to $30$ simple conditions out of a total of $32$, with a condition coverage equal to $0.938$ ($93,8\%$).
+
+Since condition coverage is less than $1$, our test set $T_2$ is \textbf{not} adequate with respect to the condition coverage criterion. 
+
+\subsubsection{Mutation Analysis}
+\hfill\\
+
+According to \texttt{PIT} report, mutation coverage of our $T_2$ test set is equal to $32$, out of a total of $41$ (mutation score $78.04 \%$). 
 
 \subsection{\texttt{ClassUtil} class testing analysis}
 
@@ -1770,6 +1803,47 @@ cls & $vEC_1$ & A not-\texttt{null} \texttt{Class} object. & \texttt{"andrea.Tes
 \end{table*}
 
 
+
+\subsubsection{Adequacy Criteria}
+\hfill\\
+
+\paragraph{Statement coverage}
+\hfill\\
+
+Our test set $T_1$ is able to cover up to $52$ statements out of a total of $75$, reaching a statement coverage equal to \textbf{0,693} (\textbf{69,3\%}). 
+
+Since we have obtained a very bad result, in order to improve our test set, we add following unit tests to $T_1$, obtaining our new test set $T_2$:
+\begin{enumerate}
+\item\texttt{additionalTest\_1} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_2} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_3} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_4} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_5} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_6} (into \texttt{OtherTests} class).
+\end{enumerate}
+
+Using $T_2$, we are able to cover up to $75$ statements, reaching a statement coverage equal to \textbf{1} (\textbf{100\%}).
+
+Since statement coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the statement coverage criterion}.
+
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
+
+According to our analysis, \texttt{SimpleRegex} class contains $29$ decisions and our test set $T_2$ is able to cover up to $28$ of them, reaching a decision coverage equal to \textbf{0,965} (\textbf{96,5\%}). 
+
+Because decision coverage of $T_2$ is less than $1$, $T_2$ is \textbf{not} adequate with respect to the decision coverage criterion.
+
+\paragraph{Condition coverage}
+\hfill\\
+
+According to sonarcloud reports, our test set $T_2$ covers up to $59$ simple conditions out of a total of $60$, with a condition coverage equal to $0.983$ ($98,3\%$).
+
+Since condition coverage is less than $1$, our test set $T_2$ is \textbf{not} adequate with respect to the condition coverage criterion. 
+
+\subsubsection{Mutation Analysis}
+\hfill\\
+
+According to \texttt{PIT} report, mutation coverage of our $T_2$ test set is equal to $29$, out of a total of $71$ (mutation score $40,84 \%$). 
 
 
 
