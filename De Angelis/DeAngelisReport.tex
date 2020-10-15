@@ -1531,21 +1531,25 @@ Obliviously, like in previous cases, we have tried to improve our test set addin
 
 \subsubsection{Conclusions}
 \hfill\\
-At the end of our testing activity, using test set $T_2$, we reports $9$ failed unit tests, out of a total of $22$. This result, confirming our defect prediction, reveals the presence of several bugs.
+At the end of our testing activity, using test set $T_2$, we reports $9$ failed unit tests, out of a total of $22$. This result, confirming our defect prediction, reveals the presence of several bugs. 
 
 \subsection{\texttt{ClassUtil} class testing analysis}
 
-As the name suggests, \texttt{ClassUtil} class is used to manage classes 
+\texttt{ClassUtil} represents an utility class used to manage classes. Particularly, that class is used to dynamically loads Java classes, to retrieve classes names and packages names.
 
-class object
+How is possible to load dynamically Java classes?
 
- In particular, it is desigend in order to retrieve the name, the package of a specifified class and 
+Using \texttt{ClassLoader} objects!
 
-\texttt{ClassLoader} objects are a part of the \textit{Java Runtime Environment} that dynamically loads Java classes into the \textit{Java Virtual Machine}. When a class is requested, the class loader tries to locate the class and load the class definition into the runtime using a fully qualified class name. 
+\texttt{ClassLoader} objects are a part of the \textit{Java Runtime Environment} that dynamically loads Java classes into the \textit{Java Virtual Machine}. When a class is requested, the class loader tries to locate the class and load the class definition into the runtime using a fully qualified class name \cite{ClassLoader}. 
 
-\texttt{ClassLoader} instances use a so-called \textit{delegation approach}: each instance of \texttt{ClassLoader} has an associated parent class loader. When requested to find a class or resource, a \texttt{ClassLoader} instance will delegate the search for the class or resource to its parent class loader before attempting to find the class or resource itself. A special class loader, called \textit{bootstrap}, is used as a parent of all the other \texttt{ClassLoader} instances. 
+\texttt{ClassLoader} instances use a so-called \textit{delegation approach}: each instance of \texttt{ClassLoader} has an associated parent class loader. When requested to find a class or resource, a \texttt{ClassLoader} instance will delegate the search for the class or resource to its parent class loader before attempting to find the class or resource itself. A special class loader, called \textit{bootstrap}, is used as a parent of all the other \texttt{ClassLoader} instances \cite{ClassLoader}. 
 
-Normally, the Java virtual machine loads classes from the local file system in a platform-dependent manner. For example, on UNIX systems, the virtual machine loads classes from the directory defined by the \texttt{CLASSPATH} environment variable. 
+Normally, the Java virtual machine loads classes from the local file system in a platform-dependent manner. 
+
+For example, on UNIX systems, the virtual machine loads classes from the directory defined by the \texttt{CLASSPATH} environment variable. 
+
+Made this necessary introduction, let's start building our test set $T_1$, analysing all public methods.
 
 \subsubsection{Methods testing analysis}
 
