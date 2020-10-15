@@ -871,8 +871,6 @@ As known, the goal of mutation analysis is to raise the mutation score to $1$, i
 
 Finally, using our tests set $T_3$, $23$ test, out of a total of $86$, failed, revealing the presence of several bugs, confirming results made by defect prediction model.
 
-
-\newpage
 \subsection{\texttt{DiskChecker} class testing analysis}
 
 According to BookKeeper's documentation, \texttt{DiskChecker} class is used to provide several utility functions for checking disk problems, managing all directories belonging to \textbf{ledgers}, which represents the basic unit of storage in BookKeeper\cite{BookKeeperArchitecture}. 
@@ -1311,7 +1309,7 @@ Finally, using our test set $T_3$, $7$ tests, out of a total of $50$, failed rev
 
 \subsection{\texttt{SimpleRegex} class testing analysis}
 
-As the name suggests, \texttt{SimpleRegex} class is used to manage a "\textit{simple}" RegEx, that is a \textit{\textbf{Reg}ular \textbf{Ex}pression}, which represents a sequence of characters, or a \textit{pattern}, that define a search pattern used in several string-searching algorithms or during string-input validation operation; in other word, the aim of a RegEx pattern is to matches a target string.
+As the name suggests, \texttt{SimpleRegex} class is used to manage a "\textit{simple}" RegEx, that is a \textit{\textbf{Reg}ular \textbf{Ex}pression}, which represents a sequence of characters that defines a search pattern used in several string-searching algorithms or during string-input validation operations; in other words, the aim of a RegEx pattern is to match a target string.
 
 An example of RegEx is \colorbox{beaublue}{\texttt{gr(a|e)y}} which matches both \colorbox{beaublue}{\texttt{gray}} or \colorbox{beaublue}{\texttt{grey}} strings.
 
@@ -1336,6 +1334,8 @@ This meta-characters is known as \textit{wildcard}. For example, \colorbox{beaub
 For example, \colorbox{beaublue}{\texttt{a.*b}} matches any string that contains an "\texttt{a}", and then the character "\texttt{b}" at some later point, like\newline  \colorbox{beaublue}{\texttt{a andrea graziani b}}.
 \end{description}
 
+Made this necessary introduction, let's start building our test set $T_1$, analysing all public methods.
+
 \subsubsection{Methods testing analysis}
 
 \paragraph{\texttt{SimpleRegex}}
@@ -1349,7 +1349,9 @@ Obliviously, that method represents the constructor of \texttt{SimpleRegex} clas
 
 All valid and invalid equivalence classes are reported in \textbf{\cref{SimpleRegexEq}}, while method signature is shown below, in \textbf{\cref{SimpleRegexSignature}}.
 
-From identified equivalence classes, we have developed $1 \times 2 = 2$ valid test cases and $1+1+1+1+1=5$ negative test cases. Precisely, we have tested each negative test case when \texttt{caseInsensitive} is both \texttt{true} and \texttt{false}; therefore there is a total of $10$ negative test cases, then $12$ total tests, $7$ of which failed: a very bad result.
+From identified equivalence classes, we have developed $1 \times 2 = 2$ valid test cases and $1+1+1+1+1=5$ negative test cases. Precisely, we have tested each negative test cases when \texttt{caseInsensitive} parameter is both \texttt{true} and \texttt{false}; therefore, we have built a total of $10$ negative test cases.
+
+Out of a total of $12$ tests, $7$ of them failed: a very bad result.
 
 \begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{SimpleRegex}}, label={SimpleRegexSignature}]
 public SimpleRegex(String expr, boolean caseInsensitive)
@@ -1523,7 +1525,13 @@ Since condition coverage is less than $1$, our test set $T_2$ is \textbf{not} ad
 \subsubsection{Mutation Analysis}
 \hfill\\
 
-According to \texttt{PIT} report, mutation coverage of our $T_2$ test set is equal to $32$, out of a total of $41$ (mutation score $78.04 \%$). 
+Unfortunately, it's impossible to start a mutation analysis because our testing activity has revealed many errors into original program $P$. As known, we need a test set which must be \textit{successfully} executed against the original program \textit{before} staring mutation analysis \cite{mutation}. Nevertheless, according to \texttt{PIT} report, our test set $T_2$ is able to kill $32$ mutants, out of a total of $41$, achieving a mutation score equal to $78.04 \%$. 
+
+Obliviously, like in previous cases, we have tried to improve our test set adding new unit tests or improving existing ones but, unfortunately, mutants were still surviving. We believe that they are \textit{equivalent mutants} which we cannot kill because they always produce the same output as the original program. 
+
+\subsubsection{Conclusions}
+\hfill\\
+At the end of our testing activity, using test set $T_2$, we reports $9$ failed unit tests, out of a total of $22$. This result, confirming our defect prediction, reveals the presence of several bugs.
 
 \subsection{\texttt{ClassUtil} class testing analysis}
 
@@ -1539,6 +1547,7 @@ class object
 
 Normally, the Java virtual machine loads classes from the local file system in a platform-dependent manner. For example, on UNIX systems, the virtual machine loads classes from the directory defined by the \texttt{CLASSPATH} environment variable. 
 
+\subsubsection{Methods testing analysis}
 
 \begin{table*}
 \footnotesize
