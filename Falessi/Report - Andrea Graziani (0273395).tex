@@ -1,6 +1,7 @@
 \documentclass[sigconf]{acmart}
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 % On windows run updmap
+\usepackage[utf8x]{inputenc}
 \usepackage{amsmath,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
@@ -15,6 +16,7 @@
 \usepackage{hyperref}
 \usepackage{adjustbox}
 \usepackage{threeparttable}
+\usepackage{xspace}
 \usepackage[nameinlink]{cleveref}
 
 \expandafter\newcommand\csname r@tocindent4\endcsname{4in}
@@ -136,12 +138,17 @@ To do that, we have simply queried \texttt{Jira} to obtain all releases data, in
 
 To discover all known bugs, we have queried once again \texttt{Jira} to obtain the identifiers of all issues with type \texttt{"Bug"} and status \texttt{"Closed"} (or \texttt{"resolved"}). We remember that is possible to find the implementation of this query procedure inside \texttt{getIssuesRegistry} method into \texttt{Jira} class \footnote{\texttt{datasetbuilder.datasources.its.jira.Jira}}.
 
-Is very important to precise that scientific literature reports that most of the projects have more than $25\%$ of defects whose issue report contained no \textit{"Affected Version"} (\textbf{AV}). Moreover, the vast majority of all bugs ($51\%$) resulted in not having or having an unreliable AV. Therefore, if information about the AV for a bug is available in \texttt{Jira}, we will consider the earliest AV in Jira to be the release that introduced the bug, otherwise we have adopted proportion method.
+Is very important to precise that scientific literature reports that most of the projects have more than $25\%$ of defects whose issue report contained no \textit{"Affected Version"} (\textbf{AV}). Moreover, the vast majority of all bugs ($51\%$) resulted in not having or having an unreliable AV. Therefore, if information about the AV for a bug is available in \texttt{Jira}, we will consider the earliest AV in Jira to be the release that introduced the bug, otherwise we have adopted \textit{proportion method}.
 
-However, the creation of such datasets made in this way is far from being perfect because scientific literature reports that most of the projects have more than $25\%$ of defects whose issue report contained no AV. Moreover, the vast majority of all bugs (51\%) resulted in not having or having an unreliable AV.
+\subsubsection{The dormant defects problem}
+\hfill\\
+Empirical results show that is very common that a defect is discovered several releases \textit{after} its introduction \citep{Falessi}. 
 
+This fact implies that if we observe, today, the status of a source code file in its current version, it can be considered as defect-free while, in reality, this conclusion is \textit{not} true because it can contain \textit{undiscovered defects}.
 
+In according to scientific literature, these undiscovered defects, commonly called "\textit{dormant defects}" too, can negatively impacts our classifier's accuracy. We call "\textit{snoring}" the "\textit{noise}" consisting of all source code file containing dormant defects \citep{Falessi}.
 
+In order to remedy, literature suggest \textbf{to remove the most recent releases from a dataset}. In fact, since earlier releases likely contain more snoring classes than older releases, removing the most recent is possible to reduce the snoring effect improving our classifiers evaluations. Since scientific literature states that the first 50\% of releases are not heavily impacted by snoring \citep{Falessi}, for every analysed project, we have choose to remove from our dataset half of available releases. From an implementation point of view, this task is done executing \texttt{retrieve\-Releases\-Discarding\-HalfOfThem} method, which belongs to \texttt{Project\-Dataset\-Builder} class.
 
 
 
@@ -311,9 +318,74 @@ In fact, we were able to reach maximum value of Kappa and ROC parameter, while p
 
 
 
+\subsection{Validation technique}
+
+\subsubsection{Introduction}
+\hfill\\
+Naturally, since many different classifiers are available, it is very important to select the \textit{most accurate one}. 
+
+Our classifier evaluation method consists of measuring following parameter:
+
+\begin{description}
+
+\item[\textbf{Recall}] also known as \textbf{true positive rate}, measures correctly predicted buggy instances among all buggy instances:
+
+\begin{equation}
+\dfrac{TP}{TP + FN}
+\end{equation}
+
+\item[\textbf{Precision}] which tell us many times our classifier has correctly classified an instance as buggy:
+
+\begin{equation}
+\dfrac{TP}{TP + FP}
+\end{equation}
+
+\item[\textbf{AUC}] measures the area under the \textit{receiver operating characteristic} (\textbf{ROC}) curve, plotted using \textit{false positive rate} and \textit{true positive rate} together.
+
+\item[\textbf{Kappa}] tell to us how many times our classifier was been more accurate than a dummy classifier:
+
+\begin{equation}
+\dfrac{\text{Accuracy of classifier} - \text{Accuracy of dummy classifier}}{1 - \text{Accuracy of dummy classifier}}
+\end{equation}
+
+\end{description}
+
+Is extremely important to emphasize that the data-set involved during training phase, that is the so called \textit{training set}, \textit{cannot} be used to measure above parameters due to following reasons:
+\begin{itemize}
+
+\item We \textit{already} know the classifications of each instance belonging to training set, therefore we are not interested in accuracy about predictions involving these data.
+
+\item Any estimate of performance based on training data will be, clearly, optimistic and, therefore, not very useful.
+\end{itemize}
+
+Therefore, to evaluate classifier's performance, we have to use a new data-set, containing instances \textit{not} used during training phase; this independent dataset is called the \textit{test set}. 
+
+In order to do our evaluations, we have to use a \textbf{validation technique} which describes a specific way to split available data in training and test sets. 
+
+\subsubsection{The walk-forward validation technique}
+\hfill\\
+
+To evaluate our classifiers, we have adopted, in accordance with project's specifications, a widely used validation technique called \textbf{Walk-forward}. Precisely, it is a time-series validation technique because it has the ability to \textbf{preserve the temporal order of data}, preventing that testing set have data antecedent to the training set.
+
+According to walk-forward technique, a data-set must be split into parts, which must be the smallest units that can be \textit{chronologically} ordered. Therefore, during the development of our project, our data-set was been divided into parts containing all source code files belonging to each project's release, the latter are been chronologically ordered respect to their release date.
+
+Then and in each run, all data available before the part to predict is used as the training set, and the part to predict is used as test-set. Afterwards, the model accuracy is computed as the average among runs. The number of runs is equal to one less than the number of parts.
+
+For example, regarding \textbf{BookKeeper}™ project, we have built a dataset containing $6$ releases, therefore all data available were divided into $6$ parts, while the number of runs is equal to $5$.
+
+Particularly, during first run, the first part is used as a training, and the second as testing. During the second run the first two parts are used as a training and the third as testing, and so on. 
+ 
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{./BOOKKEEPER/1 - PrecisionROCPlot.png}
+  \caption{System Architecture}
+  \label{fig:BOOKKEEPER:SamplingNoFeatureSelection}
+\end{figure}
 
 
  
+
 
 
 \begin{figure*}[h]
