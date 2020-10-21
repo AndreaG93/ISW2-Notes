@@ -1,0 +1,1871 @@
+\documentclass[sigconf]{acmart}
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+% On windows run updmap
+\usepackage{amsmath,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{dcolumn}
+\usepackage{booktabs} 
+\usepackage{pifont}  % use /ding{55} for X... /ding{51} for check
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{adjustbox}
+\usepackage{threeparttable}
+\usepackage[nameinlink]{cleveref}
+
+\expandafter\newcommand\csname r@tocindent4\endcsname{4in}
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+\lstset{
+language=Java,
+basicstyle=\small\ttfamily,			
+keywordstyle=\color{blue},
+commentstyle=\color{gray},			
+stringstyle=\color{black},					
+}
+
+
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+% My 'newcommand' for modulo function...
+\newcommand{\abs}[1]{\left|#1\right|}
+
+
+% My 'newcommand' for standard table creation...
+\newcommand{\AndreaTable}[3]{\begin{table*}[h!]
+\caption{#1}
+\centering
+\begin{tabular}{#2}
+\toprule
+#3
+\bottomrule
+\end{tabular}
+\end{table*}
+}
+
+% My 'newcommand' for standard table creation...
+\newcommand{\equivalenceClassesTable}[2]{
+\AndreaTable{#1}{llm{8cm}m{8cm}}{#2}
+}
+
+
+\definecolor{beaublue}{rgb}{0.74, 0.83, 0.9}
+
+
+\settopmatter{printacmref=false, printccs=false, printfolios =false}
+\setcopyright{none} 
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\acmConference[ISW2 Project A.A. 2019-2020]{ }{September 1, 2020}{ }
+
+\begin{document}
+
+\title{ISW2 Project A.A. 2019-2020}
+
+\author{Andrea Graziani ($0273395$)}
+\email{andrea.graziani93@outlook.it}
+\affiliation{
+  \institution{Università degli Studi di Roma "Tor Vergata"}
+  \city{Rome}
+  \country{Italy}
+}
+
+\keywords{Testing, Equivalence Class Partitioning, Boundary Value Analysis, Mutation Testing}
+\maketitle
+
+\section{Introduction}
+
+In this report we will describe all results and issues about the utilization of several \textit{testing techniques} involving following open source projects:
+
+\begin{description}
+\item[Apache BookKeeper\texttrademark]Which is a scalable, fault tolerant and low latency storage service\footnote{\url{https://github.com/apache/bookkeeper}}.
+\item[Apache OpenJPA\texttrademark]An implementation of the Java Persistence API specification\footnote{\url{https://github.com/apache/openjpa}}. 
+\end{description}
+
+To be more precise, the aim of this report is to analyse $2$ classes of each aforementioned project, attempting both to find if there are any errors in it and to increase our confidence in the correct functioning of the \textbf{software under test} (\textbf{SUT}), although the completeness of our testing does not necessarily demonstrate that these classes are error free.
+
+\subsection{Class selection}
+
+To select classes for our testing activities, we have mainly relied on results elaborated by our \textbf{defect prediction model}, developed using \textbf{Weka} \footnote{\url{https://www.cs.waikato.ac.nz/~ml/weka/}} machine learning software, using a \textit{random forests} classifier without \textit{sampling} or \textit{feature selection}. 
+
+Particularly, we have focused on classes marked as \textit{defective} (or \textit{buggy}) by our predictor because it is likely that they exhibit a defect observable by our test sets. As known, this approach is able to \textit{reduce the cost of testing}, by letting to focus on specific classes, ignoring stable ones \cite{Falessi}.
+
+In particular, for our testing activities involving Apache BookKeeper\texttrademark, we have choose following classes:
+\begin{description}
+\item[\texttt{DefaultEnsemblePlacementPolicy}]\footnote{\texttt{org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy}} Because it has been marked as defective by our prediction model and, as we will see later, our testing activity has confirmed that prediction.
+\item[\texttt{DiskChecker}]\footnote{\texttt{org.apache.bookkeeper.util.DiskChecker}} Although it has not been marked as defective, we have choose this class due to its relative high LOC value ($294$), high number of revisions ($11$) and high number of authors ($9$). Despite its presumed stability, our testing activity has found several defects inside that class. 
+\end{description}
+
+Regarding Apache OpenJPA\texttrademark, we have canalised following classes:
+
+\begin{description}
+\item[\texttt{SimpleRegex}]\footnote{\texttt{org.apache.openjpa.lib.util.SimpleRegex}} Marked as defective and, fortunately, our testing activity has discovered many defects.
+\item[\texttt{ClassUtil}]\footnote{\texttt{org.apache.openjpa.lib.util.ClassUtil}} Not been marked as defective. 
+
+We have choose this class due to its relative high LOC value ($213$) and, primarily, owing to age ($214$ weeks)  which, compared to the average age of all project's classes ($661.72$ weeks), we believe being very low. 
+
+Generally, younger classes belonging to latest releases can be affected by dormant (not discovered) defects\cite{Falessi}.
+
+Our testing activity has found very few defects inside that class. 
+\end{description}
+
+\subsection{Testing technique}
+
+In order to build our test set, we have adopted a testing technique called \textit{equivalence class partitioning}, according to which the domain of possible input data for each input data element is divided
+into \textbf{equivalence classes}; an equivalence class is a set of data values that the tester assumes are processed in the same way by the test object \cite{FoundationSoftwareTesting}. 
+
+Equivalence class definition was been mainly based on \textit{specifications} of our test objects using, therefore, a \textit{black-box} approach; however, sometimes, due to lacking of detailed specifications, we have performed our analysis looking the code too, using conversely a \textbf{while-box} approach. 
+
+For any equivalence classes is important to find a \textbf{representative}. As known, testing one representative of the equivalence class is considered sufficient because it is assumed that for any other input value of the same equivalence class, the test object will show the same reaction or behaviour \cite{FoundationSoftwareTesting}. Besides equivalence classes for \textit{correct} input, those for \textit{incorrect} input values must be tested as well.
+
+To guarantee that all test object reactions are triggered, we have combined representative values using following rules:
+\begin{enumerate}
+\item The representative value of all valid equivalence classes have been combined to test cases (\textit{valid/positive test case}), meaning that all possible combinations of valid equivalence classes will be covered. 
+\item The representative value of an invalid equivalence class have been combined only with representatives of other valid equivalence classes (\textit{invalid/negative test case}).
+\end{enumerate}
+
+Moreover, we have adopted following guidelines\cite{FoundationSoftwareTesting}:
+
+\begin{enumerate}
+\item Test cases including boundary values combinations are preferred.
+\item Every representative of an equivalence class appears in at least one test case.
+\item Representatives of invalid equivalence classes should not be combined with representatives of other invalid equivalence classes.
+\end{enumerate}
+
+\subsubsection{Notation}
+\hfill\\
+Before proceeding with our analysis, it's important to make some clarifications.
+
+For all analysed class, we have developed several test sets, every of which is denoted as $T_x$ with $x = \{1,2,3,\ldots\}$.  
+
+Moreover, is true that:
+
+\begin{equation}
+\forall x,y \in \mathbb{Z^+} : y > x  \Rightarrow T_x \subset T_y
+\end{equation}
+
+Above statement states that $T_y$ contains all test cases developed for $T_x$ including some more. Is important to precise that $T_y$ represents an "\textit{improved}" version of $T_x$ because, running $T_y$, we can achieve better results respect to our adequacy criteria. The aim of that notation is to highlight the improving of our test sets during various step of our testing activity.
+
+In particular, we have used $T_1$ to denote the initial test set developed during classes equivalence identification step. All improved test sets, denoted as $T_2$, $T_3$, $T_4$ etc., were been developed during both mutation analysis and during the improving of our results related to our adequacy criteria. For each improved test set, we will indicate which method was added or changed.
+
+\subsubsection{Existent test set removal}
+\hfill\\
+As request, we have removed all existing tests inside each aforementioned project. 
+
+To do that, we have simply exploited following \texttt{bash} command, invoked at the root directory of the each project:
+
+\begin{lstlisting}
+rm -R $(find ./ -type d -name "test") 
+\end{lstlisting}
+
+\section{Apache Bookkeeper\texttrademark}
+\subsection{\texttt{DefaultEnsemblePlacementPolicy} class testing analysis}
+
+What are responsibilities of \texttt{DefaultEnsemblePlacementPolicy} class? What meant by \texttt{ensemble}? And what for \texttt{placement policy}?
+
+According to bookkeeper specifications\cite{BookKeeperArchitecture}, an \textbf{ensemble} represents a group of \textbf{bookies} storing \textbf{entries}. To be more precise, according to bookkeeper's nomenclature, a \textbf{bookie} is an individual storage server while \textbf{entries} represent stored data, therefore an ensemble of size $E$ represents simply a group of storage servers.
+
+The aim of this design is to guarantee \textbf{consistency} in an ensemble of bookies of all stored data exploiting a \textbf{quorum-based replicated-write} protocol. As known, to support replicated writes at multiple replicas of a file, a client must first contact at least half the servers plus one (a majority) and get them to agree to do the update\cite{Tanenbaum}. Technically, in order to modify a file, a client needs to assemble the so called \textbf{write quorum}, that is an arbitrary collection of servers which must be more than the half of all available servers\cite{Tanenbaum}. Therefore, using bookkeeper's nomenclature, the size of write quorum $Q_w$ represents the number of bookies where each entry is written. 
+
+According to bookKeeper protocol\cite{BookKeeperProtocol}, the following invariant must hold:
+
+\begin{equation}
+E \geqslant Q_w \geqslant Q_a
+\end{equation}
+
+In other word, the ensemble size $E$ must be larger than the write quorum size $Q_w$, which must in turn be larger than the so called \textbf{ack quorum size} $Q_a$, which represents, instead, the number of nodes an entry must be acknowledged on. 
+
+BookKeeper uses several algorithms to selects a number of bookies from a cluster to build an ensemble compliant to above specifications, some of which are capable to exploit several network topology proprieties too. 
+
+According to BookKeeper design, the implementations of these algorithm must be compliant to \texttt{EnsemblePlacementPolicy} interface \cite{EnsemblePlacementPolicy}; in other words, any implementation must respect a specific \textit{contract}, established by aforementioned interface, which covers aspects related to initialization and bookie selection for data placement and reads\cite{EnsemblePlacementPolicy}. 
+
+Currently there are 3 implementations available by default. They are:
+\begin{itemize}
+\item \texttt{DefaultEnsemblePlacementPolicy}
+\item \texttt{RackawareEnsemblePlacementPolicy}
+\item \texttt{RegionAwareEnsemblePlacementPolicy}
+\end{itemize}
+
+In particular, \texttt{DefaultEnsemblePlacementPolicy} class encapsulates the simplest algorithm for bookie selection for ensemble creation because it, simply, picks bookies randomly in order to build an ensemble. 
+
+\subsubsection{Methods testing analysis}
+
+\paragraph{\texttt{initialize}}
+\hfill\\
+According to documentation, after the creation of an \texttt{Default\-EnsemblePlacementPolicy} object's instance, bookKeeper client have to call \texttt{initialize} method, which signature is reported in \textbf{\cref{initializeSignature}}, in order to initialize the placement policy. 
+
+Observing method's signature and documentation, we note that several complex resources, passed as parameter, are necessary to invoke this method, however, observing method's implementation, only one of them is effectively used, simplifying our testing activity.
+
+In fact, only \texttt{conf} parameter, representing a \texttt{Client\-Configu\-ration} object, used to contain client configuration necessary for bookKeeper client construction, is effectively used. 
+
+Moreover, only following methods, belonging \texttt{Client\-Configu\-ration} class, using \texttt{conf} parameter, are invoked in \texttt{initialize} method:
+
+\begin{itemize}
+\item \texttt{getDiskWeightBasedPlacementEnabled}
+\item \texttt{getBookieMaxWeightMultipleForWeightBasedPlacement}
+\end{itemize}
+
+Therefore, in order to test \texttt{initialize} method, we have choose to use a \textbf{mock}. As known, a mock is a special-purpose replacement class that mimic behaviour of real objects in controlled ways, for example returning values to the calling component. As known, the use of mock is very useful during testing activity of incomplete portions of software because you have not to to wait for their completion to start your test activity. 
+
+Oblivious, we have use \textbf{Mockito framework}\footnote{\url{https://site.mockito.org/}} to manage \texttt{conf} parameter's return values.
+
+All valid and invalid equivalence classes, indicated as $vEC$ and $iEC$ respectively, are reported in \textbf{\cref{initializeEq}}. We have developed $2$ valid test cases and $1$ negative test case. All test passed.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{initialize}}, label={initializeSignature}]
+EnsemblePlacementPolicy initialize(ClientConfiguration conf,
+                                   Optional<DNSToSwitchMapping> optionalDnsResolver,
+                                   HashedWheelTimer hashedWheelTimer,
+                                   FeatureProvider featureProvider,
+                                   StatsLogger statsLogger)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{initialize} method}
+\label{initializeEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{conf} & $vEC_1$ & A not-\texttt{null} \texttt{ClientConfiguration} object which:
+
+\begin{itemize}
+\item \texttt{conf.getDiskWeightBasedPlacementEnabled() = true}
+\end{itemize}
+
+ & \textit{(see the code)}
+
+\\\cline{2-4} 
+
+& $vEC_1$ & A not-\texttt{null} \texttt{ClientConfiguration} object which:
+
+\begin{itemize}
+\item \texttt{conf.getDiskWeightBasedPlacementEnabled() = false}
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{optionalDnsResolver} & $vEC_1$ & Any value. \texttt{optionalDnsResolver} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{hashedWheelTimer} & $vEC_1$ & Any value. \texttt{hashedWheelTimer} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{featureProvider} & $vEC_1$ & Any value. \texttt{featureProvider} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{statsLogger} & $vEC_1$ & Any value. \texttt{statsLogger} is never used or accessed by the class. & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+\paragraph{\texttt{newEnsemble}}
+\hfill\\
+Documentation \citep{EnsemblePlacementPolicy} reports that \texttt{newEnsemble} method is used to build an ensemble made up of several bookies. Method signature, shown below in \textbf{\cref{newEnsembleSignature}}, reports that it takes up to $5$ parameters and return an ensemble which is represented by a \texttt{List<BookieSocket\-Address>} object. 
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{newEnsemble}}, label={newEnsembleSignature}]
+List<BookieSocketAddress> newEnsemble(int ensembleSize,
+                                      int writeQuorumSize,
+                                      int ackQuorumSize,
+                                      Map<String,byte[]> customMetadata,
+                                      Set<BookieSocketAddress> excludeBookies)
+                            throws BKException.BKNotEnoughBookiesException
+\end{lstlisting}
+
+The meaning of all parameter is:
+
+\begin{description}
+\item[\texttt{ensembleSize}] represents the ensemble size.
+\item[\texttt{writeQuorumSize}] the value of write quorum size.
+\item[\texttt{ackQuorumSize}] the value of ack quorum Size.
+\item[\texttt{customMetadata}] user meta-data.
+\item[\texttt{excludeBookies}] a collection of bookies that should not be considered as targets for the new ensemble.
+\end{description}
+
+Is very important to precise that, in order to build an ensemble, bookies are picked up from a set called \texttt{knownBookies}, which can be populated invoking \texttt{onClusterChanged} method (which we will describe following).
+
+Moreover, please note that we will use $K$ to represent the set of \texttt{BookieSocketAddress} objects of \texttt{knownBookies}, while $E$, conversely, will be used to refer to the set of \texttt{BookieSocketAddress} objects belonging to \texttt{excludeBookies}.
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{newEnsembleEq}}.
+
+For this method, we have developed $2 \times 1 \times 1 \times 1 \times 2 = 4$ valid test cases, by combining the representatives of the equivalence classes, and $2 + 1 + 1 + 3 = 7$ negative test cases, by separately testing representatives of every invalid class, with a total of $11$ test cases. However, every test case was been executed twice because, as said previously, two different forms of initialization of \texttt{DefaultEnsemblePlacementPolicy} object exist (see \texttt{initialize} method); therefore, we have executed a total of $22$ tests; of these, $8$ failed.
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{newEnsemble} method}
+\label{newEnsembleEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{ensembleSize} & $vEC_1$ & $\texttt{ensembleSize} = 0$ & $0$
+
+\\\cline{2-4}
+
+& $vEC_2$ & $0 < \texttt{ensembleSize} \leq |K| - |E|$ & $|K| - |E|$
+
+\\\cline{2-4}
+
+& $iEC_1$ & $\texttt{ensembleSize} < 0$ & $-1$
+
+\\\cline{2-4}
+
+& $iEC_2$ & $\texttt{ensembleSize} > |K| - |E|$ & $|K| - |E| + 1$
+
+\\\hline
+
+\texttt{writeQuorumSize} & $vEC_1$ & $\texttt{writeQuorumSize} \leq \texttt{ensembleSize}$  & \texttt{ensembleSize}
+
+\\\cline{2-4}
+
+& $iEC_1$ & $\texttt{writeQuorumSize} > \texttt{ensembleSize}$  & $\texttt{ensembleSize} + 1$
+	
+\\\hline
+
+\texttt{ackQuorumSize} & $vEC_1$ & $\texttt{ackQuorumSize} \leq \texttt{writeQuorumSize}$  & \texttt{writeQuorumSize}
+
+\\\cline{2-4}
+
+& $iEC_1$ & $\texttt{ackQuorumSize} > \texttt{writeQuorumSize}$  & $\texttt{ackQuorumSize} + 1$
+	
+\\\hline
+
+\texttt{customMetadata} & $vEC_1$ & Any value. \texttt{customMetadata} is never used or accessed by the class. & \texttt{null}
+
+\\\hline
+
+\texttt{excludeBookies} & $vEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $|E| = 0$
+\end{itemize}
+
+& \texttt{new HashSet<>()}
+
+\\\cline{2-4}
+
+& $vEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $0 < |E| < |K|$
+\item $E \subset K$
+\item $|K| - |E| \geq \texttt{ensembleSize}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $|E| > 0$
+\item $\exists x \in E : x \notin K$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $|E| > 0$
+\item $\exists x \in E : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object  & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+\paragraph{\texttt{onClusterChanged}}
+\hfill\\
+\texttt{onClusterChanged} method is used to update the view of the cluster, that is to specify what bookies are available as \textit{writeable} and what bookies are available as \textit{read-only}; this operation is necessary to populate, or update, \texttt{knownBookies} set which, as already said, is used to pick up bookies during \texttt{newEnsemble} invocation. According to documentation, \texttt{onClusterChanged} should be invoked when any changes happen in the cluster, returning a list of \textit{failed} (or \textit{dead}) bookies during this cluster change. 
+
+Signature is reported in \textbf{\cref{onClusterChangedSignature}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{onClusterChanged}}, label={onClusterChangedSignature}]
+Set<BookieSocketAddress> onClusterChanged(Set<BookieSocketAddress> writableBookies,
+                                          Set<BookieSocketAddress> readOnlyBookies)
+\end{lstlisting}
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{onClusterChangedEq}}.
+
+Combining the representatives of the equivalence classes, we have developed are $2 \times 2  = 4$ valid test cases and $3 + 3 = 6$ negative test cases, by separately testing representatives of every invalid class. Therefore, we have a $10$ distinct tests and, since we have to run each test twice, we have a total of $20$ test cases; of these, $8$ failed. 
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{onClusterChanged} method}
+\label{onClusterChangedEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{writableBookies} & $vEC_1$ & An not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+
+\begin{itemize}
+\item $\texttt{writableBookies.size()} = 0$
+\end{itemize}
+
+& \texttt{new HashSet<>()}
+
+\\\cline{2-4}
+
+& $vEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{writableBookies.size()} > 0$
+\item $\texttt{writableBookies}  \cap \texttt{readOnlyBookies} = \emptyset$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{writableBookies.size()} > 0$
+\item $\exists x \in \texttt{writableBookies} : x \in \texttt{readOnlyBookies}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{writableBookies.size()} > 0$
+\item $\exists x \in \texttt{writableBookies} : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{readOnlyBookies} & $vEC_1$ & An not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} = 0$
+\end{itemize}
+
+& \texttt{new HashSet<>()}
+
+\\\cline{2-4}
+
+& $vEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} > 0$
+\item $\texttt{writableBookies}  \cap \texttt{readOnlyBookies} = \emptyset$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} > 0$
+\item $\exists x \in \texttt{readOnlyBookies} : x \in \texttt{writableBookies}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{Set<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{readOnlyBookies.size()} > 0$
+\item $\exists x \in \texttt{readOnlyBookies} : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{\texttt{updateBookieInfo}}
+\hfill\\
+According to \texttt{DefaultEnsemblePlacementPolicy} interface's documentation \cite{EnsemblePlacementPolicy}, \texttt{updateBookieInfo} is used to update bookie info details, taking only one input parameter, a \texttt{Map<BookieSocketAddress, BookieInfo>} object. 
+
+Please note that we will use $K$ to represent the set of the \textit{keys} (or \textit{indexes}) of the dictionary \texttt{bookieInfoMap}, that is the set of all \texttt{BookieSocketAddress} objects used as indexes. Conversely, 
+$V$ will be used to refer to the set of the \textit{values} of the dictionary, made up of \texttt{BookieInfo} objects.
+
+Signature is reported in \textbf{\cref{updateBookieInfoSignature}}, while equivalence classes are shown in \textbf{\cref{updateBookieInfoEq}}. In this case, we have developed are $2$ valid test cases and $4$ negative test cases. Therefore, we have $6$ distinct tests and, since we have to run each test twice, we have a total of $12$ test cases; of these, $3$ failed. 
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{updateBookieInfo}}, label={updateBookieInfoSignature}]
+void updateBookieInfo(Map<BookieSocketAddress,BookieInfo> bookieInfoMap)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{updateBookieInfo} method}
+\label{updateBookieInfoEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{bookieInfoMap} & $vEC_1$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} = 0$
+\end{itemize}
+
+& \textit{(see the code)}   
+    
+\\\cline{2-4}    
+    
+& $vEC_2$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item $\forall (x,y) \in K \times V \Rightarrow x \neq null, y \neq null$
+\end{itemize}
+
+& \textit{(see the code)}   
+    
+\\\cline{2-4}       
+    
+& $iEC_1$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item $\exists (x,y) \in K \times V : x = null, y \neq null$
+\end{itemize}
+
+& \textit{(see the code)} 
+
+\\\cline{2-4}    
+    
+& $iEC_2$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item $\exists (x,y) \in K \times V : x \neq null, y = null$
+\end{itemize}
+
+& \textit{(see the code)} 
+
+\\\cline{2-4}  
+
+& $iEC_3$: & A not-\texttt{null} \texttt{Map<BookieSocketAddress, BookieInfo>} object where:
+	
+\begin{itemize}
+\item $\texttt{bookieInfoMap.size()} > 0$
+\item $\exists (x,y) \in K \times V : x = null, y = null$
+\end{itemize}
+
+& \textit{(see the code)} 
+
+\\\cline{2-4}  
+
+& $iEC_4$: & \texttt{null} object. & \texttt{null} 
+    
+\\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{\texttt{replaceBookie}}
+\hfill\\
+Documentation reports that \texttt{replaceBookie} is choose randomly a bookie form \texttt{knownBookies} set, if available, in order to replace it with a bookie passed as parameter. 
+
+Observing method's implementation and its signature, the latter reported in \textbf{\cref{replaceBookieSignature}}, it is easy to notice a similarity with \texttt{newEnsamble} the method, described previously. Despite very little differences, equivalence classes of both methods are, practically, the same; please see \textbf{\cref{replaceBookieEq}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{replaceBookie}}, label={replaceBookieSignature}]
+BookieSocketAddress replaceBookie(int ensembleSize,
+                                  int writeQuorumSize,
+                                  int ackQuorumSize,
+                                  Map<String,byte[]> customMetadata,
+                                  Set<BookieSocketAddress> currentEnsemble,
+                                  BookieSocketAddress bookieToReplace,
+                                  Set<BookieSocketAddress> excludeBookies)
+                            throws BKException.BKNotEnoughBookiesException
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{replaceBookie} method}
+\label{replaceBookieEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{ensembleSize} & & See \textbf{\cref{newEnsembleEq}} &
+
+\\\hline
+
+\texttt{writeQuorumSize} & & See \textbf{\cref{newEnsembleEq}} &
+	
+\\\hline
+
+\texttt{ackQuorumSize} & & See \textbf{\cref{newEnsembleEq}} &
+
+\\\hline
+
+\texttt{customMetadata} & & See \textbf{\cref{newEnsembleEq}} &
+
+\\\hline
+
+\texttt{currentEnsemble} & $vEC_1$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} > 0$
+\item $\forall x \in \texttt{currentEnsemble} \Rightarrow x \in K$
+\item $\forall x \in \texttt{currentEnsemble} \Rightarrow x \neq \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_1$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} = 0$
+\end{itemize}
+
+& \texttt{new ArrayList<>()}
+
+\\\cline{2-4}   
+
+& $iEC_2$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} > 0$
+\item $\forall x \in \texttt{currentEnsemble} \Rightarrow x \neq \texttt{null}$
+\item $\exists x \in \texttt{currentEnsemble} : x \notin K$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_3$ & A not-\texttt{null} \texttt{List<BookieSocketAddress>} object where:
+\begin{itemize}
+\item $\texttt{currentEnsemble.size()} > 0$
+\item $\exists x \in \texttt{currentEnsemble} : x = \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_4$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{bookieToReplace} & $vEC_1$ & A valid \texttt{BookieSocketAddress} object where:
+\begin{itemize}
+\item $\texttt{bookieToReplace} \in \texttt{currentEnsemble}$
+\item $\texttt{bookieToReplace} \neq \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_1$ & A valid \texttt{BookieSocketAddress} object where:
+\begin{itemize}
+\item $\texttt{bookieToReplace} \notin \texttt{currentEnsemble}$
+\item $\texttt{bookieToReplace} \neq \texttt{null}$
+\end{itemize}
+
+& \textit{(see the code)}
+
+\\\cline{2-4}   
+
+& $iEC_2$ & \texttt{null} object & \texttt{null}
+
+\\\hline
+
+\texttt{excludeBookies} & & See \textbf{\cref{newEnsembleEq}} &
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{\texttt{Other methods}}
+\hfill\\
+To be precise, \texttt{DefaultEnsemblePlacementPolicy} class contains many other methods not analysed in this report because either they does nothing or they return always the same value regardless input parameters.
+
+Those methods are:
+\begin{description}
+\item[\texttt{uninitalize}] This method does nothing.
+\item[\texttt{registerSlowBookie}] This method does nothing too.
+\item[\texttt{isEnsembleAdheringToPlacementPolicy}] Return always \texttt{Place\-ment\-Policy\-Adherence.MEETS\_STRICT} regardless input parameters.
+\item[\texttt{reorderReadSequence}] Returns always a \texttt{WriteSet} object which is passed as parameter.
+\end{description}
+
+Oblivious, for purposes related to our adequacy criteria, we have developed one test case for each above method, passing random values as parameters.
+
+\subsubsection{Adequacy Criteria}
+\hfill\\
+Is our test set $T$ good enough? Has \texttt{DefaultEnsemblePlacementPolicy} class been tested thoroughly?
+
+In general, test adequacy refers to the \textit{goodness} of a test set, which must be measured against a quantitative criterion. As known, a test adequacy criterion could be based either on \textit{requirements} or the \textit{implementation} of the program under test. Particularly, for all test objects analysed in this report, we have adopted several \textbf{white-box} test adequacy criteria, that is depend solely on the implementation of our test objects.
+
+\paragraph{Statement Coverage}
+\hfill\\
+The statement coverage of a test set $T$ is computed as following\cite{AngelisBook}:
+
+\begin{equation} 
+\label{StatementCoverage}
+\textbf{Statement Coverage} = \dfrac{\abs{S_c}}{\abs{S_e} - \abs{S_i}}
+\end{equation}
+
+Where:
+\begin{description}
+\item[$S_c$] is the set of statements covered.
+\item[$S_i$] is the set of unreachable statements.
+\item[$S_e$] is the set of statements in the program.
+\end{description}
+
+Let's start with our test set $T_1$, that is the test set containing all valid and invalid test cases built during the analysis of the equivalence classes made previously.
+
+According to \texttt{sonarcloud} and \texttt{JaCoCo} reports, our test set $T_1$ is able to cover up to $72$ lines statements out of a total of $82$, giving to us a statement coverage equal to $0.963$ ($96.3\%$)
+
+To improve statement coverage, we have add following unit test, obtaining test set $T_2$:
+\begin{itemize}
+\item \texttt{additionalTestCase\_1()} (\texttt{TestOnClusterChanged} class)
+\end{itemize}
+
+Fortunately, test set $T_2$ is able to cover up to $81$ lines statements out of a total of $82$. 
+
+However, we are unable to cover all statements because, we believe, in \texttt{newEnsemble} method is present an \textit{unreachable} statements, because it falls on an \textit{infeasible path}, that is a path that would never be reached by any test set with any type of input data. 
+
+Therefore, since $\abs{S_i} = 1$, according to \textbf{\cref{StatementCoverage}}, statement coverage is equal to $1$ ($100\%$).
+
+Since statement coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the statement coverage criterion}.
+
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
+According to \cite{AngelisBook}, a \textit{decision} is considered covered if the flow of control has been diverted to all possible destinations that correspond to this decision, i.e. all outcomes of the decision have been taken. 
+
+This implies that, for example, the expression in the \texttt{if} or \texttt{while} statement has evaluated to \texttt{true} in some execution and to \texttt{false} in the same or another execution. Note that each \texttt{if} and each \texttt{while} contribute to \textit{one} decision whereas a \texttt{switch} may contribute to more than one \cite{AngelisBook}.
+
+Decision coverage of a test set $T$ is computed as following\cite{AngelisBook}:
+
+\begin{equation} 
+\label{DecisionCoverage}
+\textbf{Decision Coverage} = \dfrac{\abs{D_c}}{\abs{D_e} - \abs{D_i}}
+\end{equation}
+
+Where:
+\begin{description}
+\item[$D_c$] is the set of decisions covered.
+\item[$D_i$] is the set of unreachable decisions.
+\item[$D_e$] is the set of decisions in the program.
+\end{description}
+
+
+According to our analysis, our test set $T_2$ is able to cover $14$ decisions out of a total of $15$. In \texttt{newEnsemble} method, there is an unreachable decisions, therefore, since $\abs{D_i} = 1$, our test set $T_2$ give to us a decision coverage equal to $1$ ($100\%$).
+
+Since decision coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the decision coverage criterion}.
+
+\paragraph{Condition coverage}
+\hfill\\
+Unlike decision coverage, condition coverage ensures that each simple condition within a \textit{compound} condition has assumed both values \texttt{true} and \texttt{false}\cite{AngelisBook}. 
+
+Condition coverage of a test set $T$ is computed as following\cite{AngelisBook}:
+
+\begin{equation} 
+\label{ConditionCoverage}
+\textbf{Condition Coverage} = \dfrac{\abs{C_c}}{\abs{C_e} - \abs{C_i}}
+\end{equation}
+
+Where:
+
+\begin{description}
+\item[$C_e$] the set of simple conditions in the program.
+\item[$C_c$] the set of of simple conditions covered  by our test set $T$.
+\item[$C_i$] the set infeasible simple conditions.
+\end{description}
+
+Our test set $T_2$ is able to cover $33$ decisions out of a total of $34$. Unfortunately, in \texttt{newEnsemble} method there is an infeasible conditions (a simple condition inside a \texttt{while} statement which is never \texttt{false}), therefore, since $\abs{C_i} = 1$, our test set $T_2$ give to us a condition coverage equal to $1$ ($100\%$).
+
+Since condition coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the condition coverage criterion}.
+
+\subsubsection{Mutation Analysis}
+\hfill\\
+So, mutation testing represents a very powerful technique to achieve two goals\cite{mutation}:
+\begin{enumerate}
+\item Evaluating test suite quality.
+\item Once we have a good test suite, executing its test cases against  the original program to find errors.
+\end{enumerate}
+
+In mutation analysis, from a program $p$, a set of faulty programs $p_m$, called \textit{mutants}, is generated by a few single syntactic changes to the original program $p$. Assume that a test set $T$ is supplied to the system. In this case each, mutant $p_m$ will then be run against this test set $T$. If the result of running $p_m$ is different from the result of running $p$ for any test case in $T$, then the mutant $p_m$ is said to be \textit{killed}, otherwise, it is said to have \textit{survived}\cite{mutation}.
+
+Our objective, is to improve our test set $T$  providing additional test inputs (or improving existing ones) to kill these surviving mutants.
+
+As known, to evaluate the goodness of a test suite, an adequacy criterion, known as the \textit{Mutation Score} (or \textit{Mutation Coverage}), is used. 
+
+So, according to \texttt{PIT} \footnote{\url{https://pitest.org/}} report, mutation coverage of our $T_2$ test set is equal to $28$, out of a total of $41$ (mutation score $68.29 \%$). This result means that, after that each mutant is been run against our test set $T_2$, some mutants \textit{survived}. 
+
+Therefore, to improving our test suite, we have add following unit tests to our test set $T_2$:
+
+\begin{itemize}
+\item \texttt{additionalTestCase\_1()} (\texttt{TestInitialize} class)
+\item \texttt{additionalTestCase\_1()} (\texttt{TestOther} class)
+\end{itemize}
+
+Moreover, we have improved following unit test:
+
+\begin{itemize}
+\item \texttt{test\_1} (\texttt{TestOther} class)
+\item \texttt{test\_3} (\texttt{TestOther} class)
+\item \texttt{test\_4} (\texttt{TestOther} class)
+\end{itemize}
+
+After these changes, with our new test set $T_3$, we have killed $4$ extra mutants, obtaining a mutation coverage equal to $32$, out of a total of $41$ (mutation score $78.04 \%$).
+
+As known, the goal of mutation analysis is to raise the mutation score to $1$, indicating that a test set $T$ is sufficient to detect all the faults denoted by the mutants\cite{mutation}. However, this aim is out the scope of our project.
+
+\subsubsection{Conclusions}
+
+Finally, using our tests set $T_3$, $23$ test, out of a total of $86$, failed, revealing the presence of several bugs, confirming results made by defect prediction model.
+
+\subsection{\texttt{DiskChecker} class testing analysis}
+
+According to BookKeeper's documentation, \texttt{DiskChecker} class is used to provide several utility functions for checking disk problems, managing all directories belonging to \textbf{ledgers}, which represents the basic unit of storage in BookKeeper\cite{BookKeeperArchitecture}. 
+
+Specifications establishes that, for each ledger directory, is possible to specify a maximum disk space $D$ which can be used and a, so-called, warning threshold $D_w$ for disk usage\cite{BookKeeperConfiguration}. In particular, the following invariant must hold:
+
+\begin{eqnarray}
+0  <  & D &  <  1 \nonumber \\
+D_w  \leq  & D & 
+\end{eqnarray}
+
+However, for both thresholds, BookKeeper's specifications establish a default value, which is equal to $0.95$. 
+
+\subsubsection{Methods testing analysis}
+
+\paragraph{\texttt{DiskChecker}}
+\hfill\\
+Obliviously, that method represents the constructor of \texttt{DiskChecker} class and takes up to $2$ parameters:
+
+\begin{description}
+\item[\texttt{threshold}] previously indicated as $D$
+\item[\texttt{warnThreshold}] previously indicated as $D_w$
+\end{description}
+
+All valid and invalid equivalence classes, which definition is clearly based on specifications described before, are reported in \textbf{\cref{DiskCheckerEq}}, while method signature is reported in \textbf{\cref{DiskCheckerSignature}}.
+
+From identified equivalence classes, we have developed $1$ valid test case and $3$ negative test cases. All tests passed. Test cases are reported in \textbf{\cref{DiskCheckerTestCases}}. 
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{DiskChecker}}, label={DiskCheckerSignature}]
+public DiskChecker(float threshold, float warnThreshold)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{DiskChecker} method}
+\label{DiskCheckerEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\texttt{threshold} & $vEC_1$ & $0 < \texttt{warnThreshold} \leq \texttt{threshold} < 1$  & $0.5$
+    
+   \\\cline{2-4}   
+   
+    & $iEC_1$ & $\texttt{threshold} \leq 0$ & $0$
+    
+  \\\cline{2-4}   
+  
+    & $iEC_2$ & $\texttt{threshold} \geq 1$ & $1$
+    
+    \\\cline{2-4}   
+    
+    & $iEC_3$ & $0 < \texttt{threshold} < \texttt{warnThreshold} < 1$ & $\texttt{warnThreshold} - 0.1$ 
+    
+   \\\hline 
+	   
+    \texttt{warnThreshold} & $vEC_1$: & $\texttt{warnThreshold} \leq \texttt{threshold}$  & \texttt{threshold}
+    
+    \\\cline{2-4}   
+    
+    & $iEC_1$ & $\texttt{warnThreshold} > \texttt{threshold}$ & \texttt{threshold} + $0.1$
+    
+     \\  
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{table*}
+  \caption{Test cases of \texttt{DiskChecker} method}
+  \label{DiskCheckerTestCases}
+  \centering
+  \begin{tabular}{cccccc}
+    \toprule
+    \textbf{Test Case} & \multicolumn{2}{c}{\textbf{Parameter}} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
+    & \texttt{threshold} & \texttt{warnThreshold} & & &\\
+    \midrule
+    
+	$\textit{Valid}_1$ & $0.5$ & $0.5$ & No Exception & No Exception & \ding{51} \\
+	
+	$\textit{Invalid}_1$ & $0$ & $0$ & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_2$ & $1$ & $1$ & Exception & Exception & \ding{51} \\
+    
+	$\textit{Invalid}_3$ & $0.5$ & $0.6$ & Exception & Exception & \ding{51} \\
+	
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\paragraph{\texttt{checkDir}}
+\hfill\\
+\texttt{checkDir} method, taking only one \texttt{File} abject as parameter, is used to perform several checks involving a directory, verifying disk usage, write and read permissions or the exceeding of the disk usage threshold. 
+
+It returns the disk usage fraction \texttt{usage}, defined as following: 
+\begin{equation}
+\label{eqn:checkDirUsage}
+\texttt{usage} = 1 - \dfrac{\texttt{usableSpace}}{\texttt{totalSpace}}
+\end{equation}
+
+All valid and invalid equivalence classes are reported in table \textbf{\cref{checkDirEq}}, while method signature is reported in \textbf{\cref{checkDirSignature}}. We have developed $2$ valid test cases and $5$ negative test cases, with a total $8$ test cases, all passed. Test cases are described in \textbf{\cref{checkDirTestCases}}.
+
+During equivalence class definitions, it was assumed that BookKeeper's user is \textit{not} \texttt{root} user.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{checkDir}}, label={checkDirSignature}]
+public float checkDir(File dir) throws DiskErrorException
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{checkDir} method}
+\label{checkDirEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\texttt{dir} & $vEC_1$ & A not-\texttt{null} \texttt{File} object, which: 
+	
+	\begin{itemize}
+	\item Represents a valid directory
+	\item Exists
+	\item BookKeeper's user has read permissions
+	\item BookKeeper's user has write permissions
+	\end{itemize}
+	
+	& \texttt{createTempDir("directoryFile", "test")}   
+    
+    \\\cline{2-4}   
+    & $vEC_2$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Not exists
+	\item BookKeeper's user has write permissions to make that directory
+	\end{itemize}
+    
+    & \texttt{new File("./makeMultiple/dir/path")}
+    
+    \\\cline{2-4}   
+    & $iEC_1$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item It does \textbf{not} represent a directory, that is it can be one of the following:
+	\begin{enumerate}
+	\item regular file
+	\item symbolic link
+	\item character device file
+	\item ...
+	\end{enumerate}
+	\end{itemize}
+    
+    & \texttt{new File("/dev/zero")}
+    
+   \\\cline{2-4}   
+   
+    & $iEC_2$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Not exists
+	\item BookKeeper's user has \textbf{not} write permissions to make that directory
+	\end{itemize}
+	
+    & \texttt{new File("/root/notMakable")}
+   
+    \\\cline{2-4}   
+    
+    & $iEC_3$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Exists
+	\item BookKeeper's user has \textbf{not} read permissions
+	\end{itemize}
+    
+    & \texttt{new File("/root")}
+    
+    \\\cline{2-4}   
+    & $iEC_4$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item Represents a valid directory
+	\item Exists
+	\item BookKeeper's user has \textbf{not} write permissions
+	\end{itemize}
+    
+    & \texttt{new File("/home")} 
+    
+    \\\cline{2-4}   
+    
+    & $iEC_5$ & A not-\texttt{null} \texttt{File} object, which: 
+    
+    \begin{itemize}
+	\item Does not represent a valid directory (from file system point of view) because contains forbidden characters like:
+	\begin{enumerate}
+	\item For NTFS file system: \begin{verbatim} \ / : * ? < > |  \end{verbatim} 
+	\item For Btrfs, ext4, ext3, XFS file systems: \begin{verbatim} NULL  /  \end{verbatim} 
+	\end{enumerate}
+	\end{itemize}
+    
+    & \texttt{new File("$\setminus$u0000")}  (\texttt{NULL})
+    
+	\\\cline{2-4}   
+    & $iEC_6$ & A \texttt{null} object. & \texttt{null} \\     
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\begin{table*}
+  \caption{Test cases of \texttt{checkDir} method}
+  \label{checkDirTestCases}
+  \centering
+  \begin{tabular}{cccccc}
+    \toprule
+    \textbf{Test Case} & \textbf{Parameter} & \textbf{Expected output} &  \textbf{Actual output} & \textbf{Passed} \\
+    & \texttt{dir} & & & &\\
+    \midrule
+    
+	$\textit{Valid}_1$ & \texttt{IOUtils.createTempDir("directoryFile", "test")}  & No Exception & No Exception & \ding{51} \\
+
+	$\textit{Valid}_2$ & \texttt{new File("./makeMultiple/dir/path")}  & No Exception & No Exception & \ding{51} \\
+	
+	$\textit{Invalid}_1$ & \texttt{new File("/dev/zero")}  & Exception & Exception & \ding{51} \\
+
+	$\textit{Invalid}_2$ & \texttt{new File("/root/notMakable")}  & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_3$ & \texttt{new File("/root")}  & Exception & Exception & \ding{51} \\
+
+	$\textit{Invalid}_4$ & \texttt{new File("/home")}  & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_5$ & \texttt{new File("$\setminus$u0000")}  & Exception & Exception & \ding{51} \\
+	
+	$\textit{Invalid}_6$ & \texttt{null}  & Exception & Exception & \ding{51} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\paragraph{\texttt{getTotalDiskUsage}}
+\hfill\\
+\texttt{getTotalDiskUsage} is used to compute disk usage fraction, already defined in \textbf{\ref{eqn:checkDirUsage}}, taking as input a list of directories.
+
+All valid and invalid equivalence classes are reported in table \textbf{\cref{getTotalDiskUsageEq}}, while method signature is reported in \textbf{\cref{getTotalDiskUsageSignature}}. We have developed $1$ valid test case and $7$ negative test cases, with a total of $8$ test cases, of which $2$ failed.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{getTotalDiskUsage}}, label={getTotalDiskUsageSignature}]
+public float getTotalDiskUsage(List<File> dirs) throws IOException
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{getTotalDiskUsage} method}
+\label{getTotalDiskUsageEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\texttt{dirs} & $vEC_1$ & A not-\texttt{null} \texttt{List<File>} object, which: 
+	
+	\begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\forall x \in dirs$ is true that:
+	\begin{itemize}
+	\item $x$ exists
+	\item $x$ represents a valid directory
+	\item BookKeeper's user has permissions to read $x$ 
+	\end{itemize}
+	\end{itemize}
+	
+	& \textit{(see the code)}
+    
+    \\\cline{2-4}   
+    & $iEC_1$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} = 0$
+	\end{itemize}
+    
+    & \texttt{new new ArrayList<>()}
+    
+    \\\cline{2-4}   
+    & $iEC_2$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x$ is not a directory, that is $x$ can be:
+	\begin{enumerate}
+	\item regular file
+	\item symbolic link
+	\item character device file
+	\item ...
+	\end{enumerate}
+	\end{itemize}
+   
+    & \textit{(see the code)}
+    
+    \\\cline{2-4}   
+    & $iEC_3$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x$ not exist
+	\end{itemize}
+   
+    & \textit{(see the code)}
+   
+    \\\cline{2-4}   
+    
+    & $iEC_4$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x = \texttt{null}$
+	\end{itemize}
+   
+    & \textit{(see the code)}
+    
+    \\\cline{2-4}   
+    & $iEC_5$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : $ BookKeeper's user has not permissions to read $x$ 
+	\end{itemize}
+   
+    & \textit{(see the code)}
+    
+     \\\cline{2-4}   
+    & $iEC_6$ & A not-\texttt{null} \texttt{List<File>} object, where: 
+    
+    \begin{itemize}
+	\item $\texttt{dirs.size()} > 0$
+	\item $\exists x \in dirs : x $ does not represent a valid directory (from file system point of view).
+	\end{itemize}
+    
+    & \textit{(see the code)}
+    
+	\\\cline{2-4}   
+    & $iEC_7$ & A \texttt{null} object. & \texttt{null} \\     
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\paragraph{\texttt{getTotalDiskSpace} -- \texttt{getTotalFreeSpace}}
+\hfill\\
+Observing both the implementations and the signatures of these last methods, called \texttt{getTotalDiskSpace} and \texttt{getTotalFreeSpace}, is easy to understand their meaning and aim, however, if we look at the code carefully, we will note several defects that must be taken into account during test activities:
+
+\begin{enumerate}
+\item Unexpectedly, methods comments are the same, although they perform different activities; in other words, methods comments "\textit{lie}", because they do not describe what the functions truly do. 
+
+The only way to build our test set is to observe method implementations ignoring comments, adopting a pure white-box approach. 
+
+This consideration is true for \texttt{getTotalDiskSpace} while, for \texttt{getTotalFreeSpace} method, the comment is just imprecise.\\
+
+\item \texttt{getTotalFreeSpace} method signature "\textit{lies}" too. In fact, although we would expect that the method returns "\textit{total free space}" of a set of directories, observing the implementation, is easy to understand that it returns, instead, the \textit{total usable space} of a set of directories. 
+
+Since, usable space and free space have different meaning, this erroneous signature is the reason according to which many of our test cases failed. 
+
+\end{enumerate}
+
+An other defect, not strictly related to our testing activities, is that methods implementations are the same (except one line). In other words, this is a case of code duplication. 
+
+Although some differences (an empty \texttt{List<File>} object is a valid input), equivalence classes of both these methods are the same of the \texttt{getTotalDiskUsage} method, already described in \textbf{\ref{getTotalDiskUsageEq}}. 
+
+To test \texttt{getTotalDiskSpace} method, we have developed $2$ valid test cases and $6$ negative test cases, with a total $8$ test cases, of which $2$ failed. Likewise, we have developed the same number of tests for \texttt{getTotalFreeSpace} method too; however $3$ unit tests failed out of a total of $8$
+
+\subsubsection{Adequacy Criteria}
+\hfill\\
+
+\paragraph{Statement coverage}
+\hfill\\
+
+Our test set $T_1$, made up of all test cases built during equivalence class analysis, is able to cover up to $69$ statements out of a total of $89$, reaching a statement coverage equal to \textbf{0,775} (\textbf{77,5\%}).
+
+To improve our test set, we add following unit tests to test set $T_1$:
+\begin{enumerate}
+\item\texttt{ additionalTest\_1} (\texttt{TestDiskChecker} class).
+\item\texttt{ additionalTest\_1} (\texttt{TestCheckDir} class).
+\item\texttt{ additionalTest\_2} (\texttt{TestCheckDir} class).
+\item\texttt{ additionalTest\_3} (\texttt{TestCheckDir} class).
+\end{enumerate}
+
+With this new test set, $T_2$, we are able to cover up to $85$ statements out of a total of $89$.
+
+However, \texttt{DiskChecker} class contains a method, called \texttt{set\-Disk\-SpaceThreshold(float, float)}, which, we believe, contains up to $4$ unreachable statements. Generally, in order to identify unreachable statements, drawing the flow-graph of the developed code and finding out the path that would never be reached is required. However, in this case, we can consider as unreachable all statements of \texttt{setDiskSpaceThreshold(float, float)} method owing to following reasons:
+
+\begin{enumerate}
+\item \texttt{setDiskSpaceThreshold(float, float)} method is \textbf{never used} in the project, that is it is never called by any other method.
+\item \texttt{setDiskSpaceThreshold(float, float)} method has \textbf{no access modifier} (\textit{package private}) which means, according to Java language specification, that it is only accessible within classes in the same package, therefore that method is not visible by our test set.
+\end{enumerate}
+
+Therefore, we can conclude by stating that $\abs{S_i} = 4$ and our test set $T_2$ gives to us a statement coverage equal to \textbf{1} (\textbf{100\%}).
+
+Since statement coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the statement coverage criterion}.
+
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
+
+According to our analysis, \texttt{DiskChecker} class contains 16 decision. Since our test set $T_2$ covers all decisions, decision coverage is equal to \textbf{1} (\textbf{100\%}). Because decision coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the decision coverage criterion}.
+
+\paragraph{Condition coverage}
+\hfill\\
+
+According to sonarcloud reports, our test set $T_2$ covers up to $45$ simple conditions, out of a total of $46$ with a condition coverage equal to $0.978$ ($97,8\%$).
+
+Since condition coverage is less than $1$, our test set $T_2$ is \textit{not} adequate with respect to the condition coverage criterion. 
+
+\subsubsection{Mutation Analysis}
+\hfill\\
+
+According to \texttt{PIT} report, mutation coverage of our $T_2$ test set is equal to $29$, out of a total of $46$ (mutation score $63.04 \%$). 
+
+To build our new test set $T_3$, we added following unit tests to $T_2$:
+
+\begin{itemize}
+\item \texttt{additionalTest\_1} (\texttt{TestTest} class)
+\item \texttt{additionalTest\_2} (\texttt{TestTest} class)
+\item \texttt{additionalTest\_3} (\texttt{TestTest} class)
+\end{itemize}
+
+After these changes, with our new test set $T_3$, we have killed $4$ extra mutants, obtaining a mutation coverage equal to $34$, out of a total of $41$ (mutation score $82.92 \%$).
+
+\subsubsection{Conclusions}
+
+Finally, using our test set $T_3$, $7$ tests, out of a total of $50$, failed revealing the presence of several bugs, despite its stability according to our prediction model.
+
+\section{Apache OpenJPA\texttrademark}
+
+\subsection{\texttt{SimpleRegex} class testing analysis}
+
+As the name suggests, \texttt{SimpleRegex} class is used to manage a "\textit{simple}" RegEx, that is a \textit{\textbf{Reg}ular \textbf{Ex}pression}, which represents a sequence of characters that defines a search pattern used in several string-searching algorithms or during string-input validation operations; in other words, the aim of a RegEx pattern is to match a target string.
+
+An example of RegEx is \colorbox{beaublue}{\texttt{gr(a|e)y}} which matches both \colorbox{beaublue}{\texttt{gray}} or \colorbox{beaublue}{\texttt{grey}} strings.
+
+A RegEx pattern is made up of a sequence of elements including:
+
+\begin{description}
+\item[Atoms] which represents a regular character that has a literal meaning. 
+\item[Meta-characters] which represents an element with a very special meaning, depending on context. 
+
+The majority of RegEx processor engines supports up to $14$ meta-characters including: \begin{verbatim} $ & / ( ) [ ] ^ @ \ | + - *  \end{verbatim} 
+\end{description}
+
+According to documentation, the RegEx processor engine of the \texttt{SimpleRegex} class supports only $2$ meta-characters:
+
+\begin{description}
+\item[\texttt{.}] which matches any single character.
+
+This meta-characters is known as \textit{wildcard}. For example, \colorbox{beaublue}{\texttt{a.b}} matches any string that contains an "\texttt{a}", then any other character and then "\texttt{b}", like \colorbox{beaublue}{\texttt{axb}}.
+
+\item[\texttt{.*}] which matches any string. 
+
+For example, \colorbox{beaublue}{\texttt{a.*b}} matches any string that contains an "\texttt{a}", and then the character "\texttt{b}" at some later point, like\newline  \colorbox{beaublue}{\texttt{a andrea graziani b}}.
+\end{description}
+
+Made this necessary introduction, let's start building our test set $T_1$, analysing all public methods.
+
+\subsubsection{Methods testing analysis}
+
+\paragraph{\texttt{SimpleRegex}}
+\hfill\\
+Obliviously, that method represents the constructor of \texttt{SimpleRegex} class and takes up to $2$ parameters:
+
+\begin{description}
+\item[\texttt{expr}] A \texttt{string} object containing the RegEx.
+\item[\texttt{caseInsensitive}] To enable or disable case sensitive. 
+\end{description}
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{SimpleRegexEq}}, while method signature is shown below, in \textbf{\cref{SimpleRegexSignature}}.
+
+From identified equivalence classes, we have developed $1 \times 2 = 2$ valid test cases and $1+1+1+1+1=5$ negative test cases. Precisely, we have tested each negative test cases when \texttt{caseInsensitive} parameter is both \texttt{true} and \texttt{false}; therefore, we have built a total of $10$ negative test cases.
+
+Out of a total of $12$ tests, $7$ of them failed: a very bad result.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{SimpleRegex}}, label={SimpleRegexSignature}]
+public SimpleRegex(String expr, boolean caseInsensitive)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{SimpleRegex} method}
+\label{SimpleRegexEq}
+\centering
+\begin{threeparttable}[b]
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+expr & $vEC_1$ & A not-\texttt{null} \texttt{String} object which:
+
+ \begin{itemize}
+\item Is \textit{not} blank, that is $\texttt{expr.length()} > 0$ \tnote{[1]}
+\item It may contain alphanumeric characters
+\item It may contain following meta-characters \textit{only}: \tnote{[2]}
+\begin{description}
+\item[\texttt{.}]
+\item[\texttt{.*}]
+\end{description}
+\item It must not contain any \textit{escape character} \tnote{[3]}
+\end{itemize}
+
+& \texttt{a.*b}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} = 0$
+\end{itemize}
+
+& ""
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} > 0$
+\item It represents an invalid pattern because it contains both unsupported meta-characters and escape characters.
+\end{itemize}
+
+& \texttt{a.*(r|t)b\textbackslash r}
+
+\\\cline{2-4}
+
+& $iEC_3$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} > 0$
+\item It represents an invalid pattern because it contains unsupported meta-characters and no escape characters.
+\end{itemize}
+
+& \texttt{a*}
+
+\\\cline{2-4}
+
+& $iEC_4$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{expr.length()} > 0$
+\item It represents an invalid pattern because it contains escape characters and no unsupported meta-characters
+\end{itemize}
+
+& \texttt{\textbackslash t}
+
+\\\cline{2-4}
+
+& $iEC_5$ & \texttt{null} object. & \texttt{null}
+
+\\\hline
+
+caseInsensitive & $vEC_1$ & \texttt{true} & \texttt{true}
+
+\\\cline{2-4}
+
+& $vEC_2$ & \texttt{false} & \texttt{false}
+
+\\
+
+\bottomrule
+\end{tabular}
+   \begin{tablenotes}
+     \item[1] According to RegEx specification, an empty pattern is \textit{invalid}, because it either returns empty matches or matches with any string depending on RegEx processor engine. In other words, it has an undefined behaviour. In order to match empty strings, \texttt{(\^{}?![\textbackslash s\textbackslash S])} is used.
+     \item[2] Any other meta-character is considered as invalid because, according to \texttt{SimpleRegex} documentation, they are unsupported.
+     \item[3] An escape character is a character that invokes an alternative interpretation on the following characters in a character sequence. It is a particular case of meta-characters. For example \verb|\u00A9| is an escape character for \textsuperscript{\textcopyright}. \texttt{SimpleRegex} class doesn't support them.
+   \end{tablenotes}
+  \end{threeparttable}
+\end{table*}
+
+\paragraph{\texttt{matches}}
+\hfill\\
+This method is used to check the matching between RegEx expression and \texttt{target} string.  
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{matchesEq}}, while method signature is shown in \textbf{\cref{matchesSignature}}. We have developed $1$ valid test case and $1$ negative test case, both run twice using different values of \texttt{caseInsensitive} parameter described previously. All tests passed.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{matches}}, label={matchesSignature}]
+public boolean matches(String target)
+\end{lstlisting}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{matches} method}
+\label{matchesEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+    \textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+    \midrule
+    
+	\texttt{target} & $vEC_1$ & A not-\texttt{null} \texttt{String} object which
+	\begin{itemize}
+	\item  $\texttt{expr.length()} \geq 0$
+	\item Can contain any character. 
+\end{itemize}		
+	& \texttt{"Andrea1234\textbackslash t= "}
+    
+    \\\cline{2-4}   
+    
+    & $iEC_1$ & \texttt{null} object. & \texttt{null} 
+   
+    
+     \\  
+    
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\subsubsection{Adequacy Criteria}
+\hfill\\
+
+\paragraph{Statement coverage}
+\hfill\\
+
+Our test set $T_1$ is able to cover up to $43$ statements out of a total of $48$, reaching a statement coverage equal to \textbf{0,895} (\textbf{89,5\%}).
+
+To improve our test set, we add following unit tests to $T_1$, obtaining our new test set $T_2$:
+\begin{enumerate}
+\item\texttt{ additionalTest\_1} (into \texttt{TestMatches} class).
+\item\texttt{ additionalTest\_2} (into \texttt{TestMatches} class).
+\item\texttt{ additionalTest\_3} (into \texttt{TestMatches} class).
+\end{enumerate}
+
+Using $T_2$, we are able to cover up to $47$ statements out of a total of $48$, reaching a statement coverage equal to \textbf{0,979} (\textbf{97,9\%}).
+
+Since during our test activities we were unable to build a test set capable to cover last statement (probably \textit{unreachable}), we can state that $T_2$ in \textbf{not} adequate with respect to the statement coverage criterion.
+
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
+
+According to our analysis, \texttt{SimpleRegex} class contains $13$ decisions and our test set $T_2$ is able to cover up to $12$ of them, reaching a decision coverage equal to \textbf{0,923} (\textbf{92,3\%}). 
+
+Because decision coverage of $T_2$ is less than $1$, $T_2$ is \textbf{not} adequate with respect to the decision coverage criterion.
+
+\paragraph{Condition coverage}
+\hfill\\
+
+According to sonarcloud reports, our test set $T_2$ covers up to $30$ simple conditions out of a total of $32$, with a condition coverage equal to $0.938$ ($93,8\%$).
+
+Since condition coverage is less than $1$, our test set $T_2$ is \textbf{not} adequate with respect to the condition coverage criterion. 
+
+\subsubsection{Mutation Analysis}
+\hfill\\
+
+Unfortunately, it's impossible to start a mutation analysis because our testing activity has revealed many errors into original program $P$. As known, we need a test set which must be \textit{successfully} executed against the original program \textit{before} staring mutation analysis \cite{mutation}. Nevertheless, according to \texttt{PIT} report, our test set $T_2$ is able to kill $32$ mutants, out of a total of $41$, achieving a mutation score equal to $78.04 \%$. 
+
+Obliviously, like in previous cases, we have tried to improve our test set adding new unit tests or improving existing ones but, unfortunately, mutants were still surviving. We believe that they are \textit{equivalent mutants} which we cannot kill because they always produce the same output as the original program. 
+
+\subsubsection{Conclusions}
+\hfill\\
+At the end of our testing activity, using test set $T_2$, we reports $9$ failed unit tests, out of a total of $22$. This result, confirming our defect prediction, reveals the presence of several bugs. 
+
+\subsection{\texttt{ClassUtil} class testing analysis}
+
+\texttt{ClassUtil} represents an utility class used to manage classes. Particularly, that class is used to dynamically loads Java classes, to retrieve classes names and packages names.
+
+How is possible to load dynamically Java classes?
+
+Using \texttt{ClassLoader} objects!
+
+\texttt{ClassLoader} objects are a part of the \textit{Java Runtime Environment} that dynamically loads Java classes into the \textit{Java Virtual Machine}. When a class is requested, the class loader tries to locate the class and load the class definition into the runtime using a fully qualified class name \cite{ClassLoader}. 
+
+\texttt{ClassLoader} instances use a so-called \textit{delegation approach}: each instance of \texttt{ClassLoader} has an associated parent class loader. When requested to find a class or resource, a \texttt{ClassLoader} instance will delegate the search for the class or resource to its parent class loader before attempting to find the class or resource itself. A special class loader, called \textit{bootstrap}, is used as a parent of all the other \texttt{ClassLoader} instances \cite{ClassLoader}. 
+
+Normally, the Java virtual machine loads classes from the local file system in a platform-dependent manner. 
+
+For example, on UNIX systems, the virtual machine loads classes from the directory defined by the \texttt{CLASSPATH} environment variable. 
+
+Made this necessary introduction, let's start building our test set $T_1$, analysing all public methods.
+
+\subsubsection{Methods testing analysis}
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{toClass} method}
+\label{toClassEq}
+\centering
+\begin{threeparttable}[b]
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+
+str & $vEC_1$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item Is \textit{not} blank, that is $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.\tnote{[1]}
+\item Specified \textit{binary name} must matches an existent and readable \texttt{.class} (or \texttt{.jar}) file. 
+
+In particular:
+\begin{itemize}
+\item Into specified \texttt{str} is represent a dollar signs ('\texttt{\$}') used to separate inner and outer classes
+\end{itemize}
+\end{itemize}
+
+& \texttt{"javax.swing.JSpinner\$DefaultEditor"}
+
+\\\cline{2-4}
+    
+& $vEC_2$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+\item Specified \textit{binary name} must matches an existent and readable \texttt{.class} (or \texttt{.jar}) file. 
+
+In particular:
+\begin{itemize}
+\item It is a valid \textit{binary name} containing only periods ('\texttt{.}') used to identify the package name.
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.lang.String"}
+
+\\\cline{2-4}
+
+& $vEC_3$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+\item Specified \textit{binary name} must matches an existent and readable \texttt{.class} (or \texttt{.jar}) file. 
+
+In particular:
+\begin{itemize}
+\item Specified \texttt{str} represents an array classes with one or more brackets ('\texttt{[}' and '\texttt{]}') 
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.awt.Point[][]"}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{str.length()} = 0$
+\end{itemize}
+
+& ""
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{String} object which: 
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item It represents an invalid \textit{binary name}.
+\end{itemize}
+
+& \texttt{"\$\%\&andrea..invalid..binary*-+"}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object. & \texttt{null}
+
+\\\hline
+
+resolve & $vEC_1$ & \texttt{true}\tnote{[2]} & \texttt{true}
+
+\\\cline{2-4}
+
+& $vEC_2$ & \texttt{false} & \texttt{false}
+
+\\\hline
+
+loader & $vEC_1$ & A not-\texttt{null} \texttt{ClassLoader} object which: 
+
+\begin{itemize}
+\item Must be able to load specified \texttt{.class} file; that is, loader's class paths must include a directory containing specified \texttt{str} class file.
+\end{itemize}
+
+ & \textit{(see the code)}
+
+\\\cline{2-4}
+
+& $vEC_2$ & \texttt{null} object.\tnote{[3]} & \texttt{null}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{ClassLoader} object which: 
+
+\begin{itemize}
+\item Is unable to load specified \texttt{.class} class file. 
+\end{itemize}
+
+ & \textit{(see the code)}
+
+\\
+
+\bottomrule
+\end{tabular}
+   \begin{tablenotes}
+     \item[1] According to the \textit{The Java\texttrademark Language Specification}, any class or interface must be named by its \textit{binary name}, which must meet several constraints. 
+     
+     Examples of valid class names include:
+\begin{itemize}
+\item \texttt{java.lang.String}
+\item \texttt{javax.swing.JSpinner\$DefaultEditor}
+\item \texttt{java.security.KeyStore\$Builder\$FileBuilder\$1}
+\end{itemize}
+       
+For details, please visit: \url{https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1}
+     
+\item[2] When \texttt{true}, the specified class will be \textit{initialized} if it has not been initialized earlier. Initialization of a class consists of executing its static initializers and the initializers for static fields  declared in the class. 
+
+For details, please visit: \url{https://docs.oracle.com/javase/specs/jls/se7/html/jls-12.html}
+
+\item[3] Specified \texttt{ClassLoader} object can be \texttt{null} because, in that case, bootstrap class loader would be called.
+
+
+   \end{tablenotes}
+  \end{threeparttable}
+\end{table*}
+
+
+
+
+
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{getClassName(String)} and \texttt{getPackageName(String)} methods}
+\label{getClassNameStringGetPackageNameStringEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+\texttt{fullName} & $vEC_1$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item Is \textit{not} blank, that is $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.\tnote{[1]}
+
+In particular:
+\begin{itemize}
+\item Into specified \texttt{str} is represent a dollar signs ('\texttt{\$}') used to separate inner and outer classes
+\end{itemize}
+\end{itemize}
+
+& \texttt{"javax.swing.JSpinner\$DefaultEditor"}
+
+\\\cline{2-4}
+    
+& $vEC_2$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+
+In particular:
+\begin{itemize}
+\item It is a valid \textit{binary name} containing only periods ('\texttt{.}') used to identify the package name.
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.lang.String"}
+
+\\\cline{2-4}
+
+& $vEC_3$ & A not-\texttt{null} \texttt{String} object which:
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item Must be a \textit{binary name} as defined by \textit{The Java\texttrademark Language Specification}.
+
+In particular:
+\begin{itemize}
+\item Specified \texttt{str} represents an array classes with one or more brackets ('\texttt{[}' and '\texttt{]}') 
+\end{itemize}
+\end{itemize}
+
+& \texttt{"java.awt.Point[][]"}
+
+\\\cline{2-4}
+
+& $iEC_1$ & A not-\texttt{null} \texttt{String} object which: 
+
+ \begin{itemize}
+\item $\texttt{str.length()} = 0$
+\end{itemize}
+
+& ""
+
+\\\cline{2-4}
+
+& $iEC_2$ & A not-\texttt{null} \texttt{String} object which: 
+
+\begin{itemize}
+\item $\texttt{str.length()} > 0$
+\item It represents an invalid \textit{binary name}.
+\end{itemize}
+
+& \texttt{"\$\%\&andrea..invalid..binary*-+"}
+
+\\\cline{2-4}
+
+& $iEC_3$ & \texttt{null} object. & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+\begin{table*}
+\footnotesize
+\caption{Equivalence classes and representatives of \texttt{getClassName(Class)} and  \texttt{getPackageName(Class)} methods}
+\label{getClassNameClassGetPackageNameClassEq}
+\centering
+\begin{tabular}{l|cm{10.5cm}|c}
+\toprule
+ 
+\textbf{Parameter} & \multicolumn{2}{|l|}{\textbf{Equivalence Classes}} & \textbf{Representatives} \\
+\midrule
+    
+cls & $vEC_1$ & A not-\texttt{null} \texttt{Class} object. & \texttt{"andrea.Test"}
+
+\\\cline{2-4}
+
+& $iEC_1$ & \texttt{null} object. & \texttt{null}
+
+\\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+
+\subsubsection{Adequacy Criteria}
+\hfill\\
+
+\paragraph{Statement coverage}
+\hfill\\
+
+Our test set $T_1$ is able to cover up to $52$ statements out of a total of $75$, reaching a statement coverage equal to \textbf{0,693} (\textbf{69,3\%}). 
+
+Since we have obtained a very bad result, in order to improve our test set, we add following unit tests to $T_1$, obtaining our new test set $T_2$:
+\begin{enumerate}
+\item\texttt{additionalTest\_1} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_2} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_3} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_4} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_5} (into \texttt{OtherTests} class).
+\item\texttt{additionalTest\_6} (into \texttt{OtherTests} class).
+\end{enumerate}
+
+Using $T_2$, we are able to cover up to $75$ statements, reaching a statement coverage equal to \textbf{1} (\textbf{100\%}).
+
+Since statement coverage of $T_2$ is $1$, we can consider $T_2$ as \textbf{adequate with respect to the statement coverage criterion}.
+
+\paragraph{Decision coverage (Branch decision coverage)}
+\hfill\\
+
+According to our analysis, \texttt{SimpleRegex} class contains $29$ decisions and our test set $T_2$ is able to cover up to $28$ of them, reaching a decision coverage equal to \textbf{0,965} (\textbf{96,5\%}). 
+
+Because decision coverage of $T_2$ is less than $1$, $T_2$ is \textbf{not} adequate with respect to the decision coverage criterion.
+
+\paragraph{Condition coverage}
+\hfill\\
+
+According to sonarcloud reports, our test set $T_2$ covers up to $59$ simple conditions out of a total of $60$, with a condition coverage equal to $0.983$ ($98,3\%$).
+
+Since condition coverage is less than $1$, our test set $T_2$ is \textbf{not} adequate with respect to the condition coverage criterion. 
+
+\subsubsection{Mutation Analysis}
+\hfill\\
+
+According to \texttt{PIT} report, mutation coverage of our $T_2$ test set is equal to $29$, out of a total of $71$ (mutation score $40,84 \%$). 
+
+
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{bib}
+
+
+\end{document}
+\endinput
+
+
