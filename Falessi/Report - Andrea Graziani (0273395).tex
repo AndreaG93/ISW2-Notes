@@ -81,98 +81,97 @@ stringstyle=\color{black},
 \keywords{Testing, Equivalence Class Partitioning, Boundary Value Analysis, Mutation Testing}
 \maketitle
 
-\section{Introduction}
+\section{Deliverable 2}
 
-Why are some programs more defect-prone than others? 
+\subsection{Introduction}
 
-This is one of the central questions of software engineering. To answer it, we must first know \textit{which} programs or software modules are more failure-prone than others, afterwards, with this knowledge, we can search for properties of the program that are correlate with defect density. How to do that?
+How to detect software modules which are more \textbf{defect-prone} than others? Why we are interested to identify them? 
 
-Let's start now with some definitions. A \textbf{software defect} can be generally considered as an error, flaw, bug, mistake, failure, or fault in a computer program or system that may generate an inaccurate or unexpected outcome, or precludes the software from behaving as intended \cite{SoftwareDefectPredictionRawat}.
+These are some of the most critical questions of software engineering, to which we will try to answer. 
 
-Software defects always incur cost in terms of time because identifying and rectifying defects is one of the most time consuming and expensive software processes \cite{SoftwareDefectPredictionRawat}.
+Firstly, a \textbf{software defect} can be generally considered as an error, flaw, bug, mistake, failure, or fault in a computer program or system that may generate an inaccurate or unexpected outcome, or precludes the software from behaving as intended \cite{SoftwareDefectPredictionRawat}.
 
-Although it's not practically possible to eliminate each and every defect from a software product, we can reduce their adverse effects exploiting \textbf{software defects prediction} techniques, which aim is to identify software modules that are defect prone, in order to reduce the cost of testing activities and code review by letting developers focus on specific artefacts \citep{Falessi}.
+As known, the presence of defective software modules \textit{always incurs cost in terms of time and money}, because identifying and rectifying defects is one of the most time consuming and expensive software processes \cite{SoftwareDefectPredictionRawat}.
+
+Although it's not practically possible to eliminate each and every defect from a software product, we can reduce their adverse effects exploiting \textbf{software defects prediction} techniques, \textit{which aim is to identify software modules that are defect-prone, in order to reduce the cost of testing activities and code review by letting developers focus on specific artefacts} \citep{Falessi}.
 
 How to build a software defect prediction model? 
 
-The building of a software prediction model based on \textbf{machine learning} techniques passes through several steps which we will describe them in following sections.
+In this report, we will describe a software defect prediction model based on \textbf{machine learning} techniques, which building passes through following steps:
+
+\begin{itemize}
+\item \textbf{Dataset building}.
+\item \textbf{Dataset labelling}.
+\item \textbf{Preprocessing}.
+\end{itemize}
+
 
 \subsection{Dataset building}
 
-Firstly, is necessary to generate a data-set to provide an appropriate input for our prediction model, that is we need to build a set of \textbf{instances}. In our context, each data-set's instance represents a \textbf{source code file} belonging to an open-source software project and characterized by its values on a fixed, predefined set of \textbf{features}, or \textbf{attributes}.
+The first step is, obviously, to \textbf{generate a data-set}, in order to provide an appropriate input for our prediction model; in other words, we need to build a set of \textbf{instances}. 
 
-Clearly, in order to build an useful software predictor, is preferable to collect instances whose features are correlated to the defect-proneness of the software module they belong. Fortunately, there are many studies about software defect-proneness which have identified several features (sometimes called also \textbf{metrics}) correlated with defect density of a software module. 
+In our context, each data-set's instance represents a \textbf{source code file} belonging to one of the following open-source software projects which we have analysed:
+
+\begin{description}
+\item[Apache BookKeeper\texttrademark]Which is a scalable, fault tolerant and low latency storage service\footnote{\url{https://github.com/apache/bookkeeper}}.
+\item[Apache OpenJPA\texttrademark]An implementation of the Java Persistence API specification\footnote{\url{https://github.com/apache/openjpa}}. 
+\end{description}
+
+Every data-set's instance is characterized by its values on a fixed, predefined set of \textbf{features}, or \textbf{attributes}, like its code lines number, its age, its complexity and so on. Clearly, in order to build an useful software predictor, \textit{is preferable to collect instances whose features are correlated to the defect-proneness of the software module they belong}. Fortunately, scientific literature reports many studies, about software defect-proneness, which had identified several features (sometimes called also \textbf{metrics}) correlated with defect density of a software module. 
 
 For example, \citet{PredictingDefectsForEclipse} showed that the number of past defects has the highest correlation with number of future defects. \citet{Nagappan} report that \textit{code churn} is a very powerful metric for predict software defect density, while \citet{Gyimothy} showed the same with \textit{lines of code} (\texttt{LOC}) metric.
 
-Defect-proneness correlated features are extracted from \textit{history data} of software module, including software archives and tools like \textit{version control systems} and \textit{issue tracking systems}, because they are generally assumed as a good source for future fault prediction. 
+\subsubsection{Our implementation}
+\hfill\\
 
-\subsection{Labelling activity}
+We extracted these defect-proneness correlated features from \textit{history data} of our projects, exploiting tools like \texttt{git}\footnote{\url{https://git-scm.com/}}, the most famous \textit{version control systems} today available, and \texttt{JIRA}\footnote{\url{https://www.atlassian.com/it/software/jira}}, which is a \textit{issue tracking systems}.
 
-Since our aim is to build a software defect predictor using a \textit{supervised learning scheme}, is necessary to perform the so-called \textit{labelling} task, that is an activity according to which one or more informative tags are assigned to each unlabelled instance of a given dataset.
+From an implementation point of view, the \texttt{Git} class\footnote{Complete path: \texttt{datasetbuilder.datasources.vcs.git.Git}} contains the entire application logic to manage a \texttt{git} repository, implementing \texttt{Version\-Control\-System} interface, reported in \textbf{\cref{interface1}}). 
 
-In fact, when a supervised learning scheme is used, the goal is to learn a function that maps an input to an output based on example input-output pairs. In other word, each data-set instance $T$ is represented as a pair $(x_{d}, y)$ where $x_d$ is a $d$-dimensional input object while $y$ is the desired output value. In this way, a supervised learning algorithm, analysing labelled training data, can produce an inferred function, which can be used for mapping new instances.
+To be more precise, this class has following responsibilities: 
+\begin{itemize}
+\item To identify the commit associated to each project's release.
+\item To extract metrics of a given source code file; this is done invoking \texttt{compute\-File\-Metrics} method.
+\item To identify all source code files belonging to a release.
+\end{itemize}
 
-In our context, to build a properly data-set, we need to label each instance as \textit{buggy} or \textit{not buggy}. 
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\scriptsize, caption={\texttt{VersionControlSystem} interface}, label={interface1}]
+public interface VersionControlSystem {
 
-In order to do that during the development of our predictor, we have exploited all information retrievable both from \texttt{JIRA}\footnote{\url{https://www.atlassian.com/it/software/jira}}, one of the most popular issue tracking systems, and \texttt{git}\footnote{\url{https://git-scm.com/}}, the most common version control systems.
+    Commit getCommitByTag(String tag);
 
-\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Dataset build logic}, label={buildProjectDataset}]
-public void buildProjectDataset() {
+    Commit getCommitByDate(LocalDateTime date);
 
-        collectReleases();
-        collectFilesBelongingToEachRelease();
+    Commit getCommitByLogMessagePattern(String pattern);
 
-        IssueRegistry issueRegistry = this.issueTrackingSystem.getIssuesRegistry(this.project.name, this.releasesByVersionID);
+    Map<String, File> getFiles(String commitHash);
 
-        calculateDefectiveFileProportion(issueRegistry.issuesWithAffectedVersions);
-        searchForDefectiveFile(issueRegistry.issues);
+    List<String> getFilesChangedByCommit(String commitHash);
 
-        collectFileMetadataOfEachRelease();
-    }
+    void computeFileMetrics(File file, Commit releaseCommit);
+}
 \end{lstlisting}
 
-First of all, it is necessary to identify all project's releases.
+To be more precise, \texttt{compute\-File\-Metrics} method was been developed in order to extract all metrics reported and described in \textbf{\cref{metrics}}. 
 
-To do that, we have simply queried \texttt{Jira} to obtain all releases data, including names, release dates and so on. Subsequently, we have exploited \texttt{git} tags inside commits messages to identify the commit associated to each release. However, when sometimes \texttt{git} tags were not available, we have identified aforementioned commits exploiting \texttt{git log} command with \texttt{--before [date]} options. \texttt{collectReleases} method, inside \texttt{ProjectDatasetBuilder}\footnote{\texttt{datasetbuilder.ProjectDatasetBuilder}} class, contains the implementation of this step.
-
-To discover all known bugs, we have queried once again \texttt{Jira} to obtain the identifiers of all issues with type \texttt{"Bug"} and status \texttt{"Closed"} (or \texttt{"resolved"}). We remember that is possible to find the implementation of this query procedure inside \texttt{getIssuesRegistry} method into \texttt{Jira} class \footnote{\texttt{datasetbuilder.datasources.its.jira.Jira}}.
-
-Is very important to precise that scientific literature reports that most of the projects have more than $25\%$ of defects whose issue report contained no \textit{"Affected Version"} (\textbf{AV}). Moreover, the vast majority of all bugs ($51\%$) resulted in not having or having an unreliable AV. Therefore, if information about the AV for a bug is available in \texttt{Jira}, we will consider the earliest AV in Jira to be the release that introduced the bug, otherwise we have adopted \textit{proportion method}.
-
-\subsubsection{The dormant defects problem}
-\hfill\\
-Empirical results show that is very common that a defect is discovered several releases \textit{after} its introduction \citep{Falessi}. 
-
-This fact implies that if we observe, today, the status of a source code file in its current version, it can be considered as defect-free while, in reality, this conclusion is \textit{not} true because it can contain \textit{undiscovered defects}.
-
-In according to scientific literature, these undiscovered defects, commonly called "\textit{dormant defects}" too, can negatively impacts our classifier's accuracy. We call "\textit{snoring}" the "\textit{noise}" consisting of all source code file containing dormant defects \citep{Falessi}.
-
-In order to remedy, literature suggest \textbf{to remove the most recent releases from a dataset}. In fact, since earlier releases likely contain more snoring classes than older releases, removing the most recent is possible to reduce the snoring effect improving our classifiers evaluations. Since scientific literature states that the first 50\% of releases are not heavily impacted by snoring \citep{Falessi}, for every analysed project, we have choose to remove from our dataset half of available releases. From an implementation point of view, this task is done executing \texttt{retrieve\-Releases\-Discarding\-HalfOfThem} method, which belongs to \texttt{Project\-Dataset\-Builder} class.
-
-
-
-
-\begin{table*}
-
-
-\begin{tabular}{l|p{6cm}}
-
+\begin{table}
+\caption{Metrics extracted from source code file $X$ by \texttt{compute\-File\-Metrics} method}
+\label{metrics}
+\begin{tabular}{l|p{4.3cm}}
 \toprule
 \textbf{Name} & \textbf{Description} \\
 \midrule
-
-\\
 
 \texttt{LOC} & Lines of code of $X$. 
 
 \\
 
-\texttt{LOC\_TOUCHED} & $\sum_R (\texttt{addedLOC} + \texttt{deletedLOC})$, where: 
+\texttt{LOC\_TOUCHED} & $\sum_R (\texttt{addedLOC} + \texttt{deletedLOC})$ \newline Where: 
 
 \begin{itemize}
 \item $R$ is the set of all revisions of $X$.
-\item $\texttt{addedLOC}$ represents the number of added code lines while $\texttt{deletedLOC}$ represents the removed ones.
+\item $\texttt{addedLOC}$ represents the number of added code lines.
+\item $\texttt{deletedLOC}$ represents the number of removed code lines.
 \end{itemize}
 
 \\
@@ -197,7 +196,7 @@ In order to remedy, literature suggest \textbf{to remove the most recent release
 
 \\
 
-\texttt{NUMBER\_OF\_AUTHORS} & Number of authors which developed $X$.
+\texttt{NUMBER\_OF\_AUTHORS} & The authors number which developed file $X$.
 
 \\
 
@@ -213,43 +212,100 @@ In order to remedy, literature suggest \textbf{to remove the most recent release
 
 \\
 
-\texttt{MAX\_CHANGE\_SET\_SIZE} &
+\texttt{MAX\_CHANGE\_SET\_SIZE} & The number of files committed together with $X$.
 
 \\
 
-\texttt{AVERAGE\_CHANGE\_SET\_SIZE} &
+\texttt{AVERAGE\_CHANGE\_SET\_SIZE} & $\dfrac{\texttt{MAX\_CHANGE\_SET\_SIZE}}{\mid R \mid}$
 
 \\
 
-\texttt{AGE\_IN\_WEEKS} & 
+\texttt{AGE\_IN\_WEEKS} & Age of $X$ in weeks.
 
 \\
 
-\texttt{WEIGHTED\_AGE\_IN\_WEEKS} & 
+\texttt{WEIGHTED\_AGE\_IN\_WEEKS} & $\dfrac{\texttt{AGE\_IN\_WEEKS}}{\texttt{LOC\_TOUCHED}}$
 
 \\
 
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
+
+\subsection{Dataset labelling}
+
+To be precise, our aim is to build a software defect predictor using a \textbf{supervised learning scheme}.
+
+When a supervised learning scheme is used, the goal of our predictor is \textit{to learn a function that maps an input to an output based on example input-output pairs}. In other word, each data-set instance $T$ is represented as a pair $(x_{d}, y)$ where $x_d$ is a $d$-dimensional input object while $y$ is a \textit{tag}, or a \textit{label}, representing the \textit{desired output value}. In this way, a supervised learning algorithm, analysing \textit{labelled training data}, can produce an inferred function, which can be used for mapping \textit{unlabelled data}.
+
+Therefore, the second very important step to build our predictor is the so-called \textit{labelling} task, according to which one or more informative tags must be assigned to each unlabelled instance of a given dataset.
+
+\subsubsection{Our implementation}
+\hfill\\
+
+In our context, to build a properly data-set, we need to label each instance as \textit{buggy} or \textit{not buggy}. 
+
+First of all, it is necessary to identify all project's releases. 
+
+\texttt{Jira} class\footnote{Complete path: \texttt{datasetbuilder.datasources.its.jira.Jira}} contains application logic used to query \texttt{Jira} servers on the cloud. It implements the \texttt{Issue\-Tracking\-System} interface, shown in \textbf{\cref{interface2}}, providing the implementations for following methods:
+
+\begin{description}
+\item[\texttt{getReleases}] Which is used to retrieve all necessary information about project's releases, including names, release dates and so on.
+\item[\texttt{getIssuesRegistry}] Invoked to get all data about known issues 
+\end{description}
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\scriptsize, caption={\texttt{IssueTrackingSystem} interface}, label={interface2}]
+public interface IssueTrackingSystem {
+
+    List<Release> getReleases(String projectName);
+
+    IssueRegistry getIssuesRegistry(
+    	String projectName, 
+    	Map<Integer, Release> releasesByVersionID);
+}
+\end{lstlisting}
+
+Querying \texttt{Jira} is not enough, because to proceed we need all commits associated to each release.
+
+To do that, we have exploited \texttt{git} tags inside commits messages to identify the commit associated to each release. 
+
+However, when sometimes \texttt{git} tags were not available, we have identified aforementioned commits exploiting \texttt{git\- log} command with \texttt{--before\- [date]} options. The application logic to do that, is contained into \texttt{Git} class.
+
+At this point, knowing commit associated to each release, we are able to retrieve all source code files associated to each project's release, however we still have to label them.
+
+To do that we need to discover all known project's issues and, to do that, we queried once again \texttt{Jira} to obtain the identifiers of all issues with type \texttt{"Bug"} and status \texttt{"Closed"} (or \texttt{"resolved"}). We remember that is possible to find the implementation of this query procedure inside \texttt{get\-Issues\-Registry} method into \texttt{Jira} class.
+
+Finally, to label each source code file as buggy or not, we need to check if the release, which the file belongs to, is an "\textit{Affected Version}" (\textbf{AV}).
+
+Is very important to precise that scientific literature reports that most of the projects have more than $25\%$ of defects whose issue report contained no information about affected versions. Moreover, the vast majority of all bugs ($51\%$) resulted in not having or having an unreliable AV. Therefore, if information about the AV for a bug is available in \texttt{Jira}, we considered the earliest AV in \texttt{Jira} to be the release that introduced the bug, otherwise we have adopted the so-called \textbf{proportion method}.
+
+\paragraph{The dormant defects problem}
+\hfill\\
+Empirical results show that is very common that a defect is discovered several releases \textit{after} its introduction \citep{Falessi}. 
+
+This fact implies that if we observe, today, the status of a source code file in its current version, it can be considered as defect-free while, in reality, this conclusion is \textit{not} true because it can contain \textit{undiscovered defects}.
+
+In according to scientific literature, these undiscovered defects, commonly called "\textit{dormant defects}" too, can negatively impacts our classifier's accuracy. We call "\textit{snoring}" the "\textit{noise}" consisting of all source code file containing dormant defects \citep{Falessi}.
+
+In order to remedy, literature suggest \textbf{to remove the most recent releases from a dataset}. In fact, since earlier releases likely contain more snoring classes than older releases, removing the most recent is possible to reduce the snoring effect improving our classifiers evaluations. Since scientific literature states that the first 50\% of releases are not heavily impacted by snoring \citep{Falessi}, for every analysed project, we have choose to remove from our dataset half of available releases. From an implementation point of view, this task is done executing \texttt{retrieve\-Releases\-Discarding\-HalfOfThem} method, which belongs to \texttt{Project\-Dataset\-Builder} class \footnote{Complete path: \texttt{datasetbuilder.ProjectDatasetBuilder}}.
 
 \subsection{Preprocessing}
 
-After generating our data-set, according to project specifications, we have also applied a preprocessing technique, commonly used in machine learning, called \textbf{feature selection} or \textbf{attribute selection}. 
+After generating our data-set with metrics and labels, we applied a preprocessing technique called \textbf{feature selection} or \textbf{attribute selection}.
 
-\subsubsection{Introduction}
-\hfill\\
-As known, most machine learning algorithms are designed to learn which are the most appropriate attributes to use for making their decisions. For example, decision tree methods choose the most promising attribute to split on at each point and should never select irrelevant or unhelpful attributes \cite{FalessiDataMining}. 
+As known, most machine learning algorithms are designed to learn which are the most appropriate attributes to use for making their decisions. For example, decision tree methods choose the most promising attribute to split on at each point and should never select irrelevant or unhelpful attributes \cite{FalessiDataMining}. Although, theoretically, having more attributes give us a more discriminating power, in practice, adding irrelevant attributes to a dataset, performances of machine learning systems degrades \cite{FalessiDataMining}. 
 
-Although, theoretically, having more attributes give us a more discriminating power, in practice, adding irrelevant attributes to a dataset, often performance of machine learning systems degrades \cite{FalessiDataMining}. 
-
-Deleting unsuitable attributes using any feature selection algorithm, is possible to \textbf{improve learning algorithms performances}, although, using specific data-sets, is possible that these techniques \textbf{can require extensive computations}, degrading overall performances. This is the reason according to which, as in many others machine learning situations, trial and error, using specific source of data, is the best choice \cite{FalessiDataMining}.
+Therefore, using a feature selection technique, deleting unsuitable attributes, is possible to \textit{improve learning algorithms performances}. However, using specific data-sets, is possible that they \textit{may require extensive computations}, degrading overall performances \cite{FalessiDataMining}.
 
 How to select relevant features?
 
-Clearly, the best way to select relevant attributes is \textit{manually}, based on a deep understanding of the learning problem. however, fortunately, automatic methods exist too. In fact, for our analysis, according to project specifications, we have adopted \textbf{Best-first} search method. 
+Clearly, the best way to select relevant attributes is \textit{manually}, based on a deep understanding of the learning problem. However, fortunately, automatic methods exist too. 
 
-This scheme adopts a \textit{greedy approach} to select attribute subset that is most likely to make better predictions. Its peculiarity it that it does not just terminate when the performance starts to drop but keeps a list of all attribute subsets evaluated so far, sorted in order of the performance measure, so that it can revisit an earlier configuration instead \cite{FalessiDataMining}. 
+\subsubsection{Our implementation}
+\hfill\\
+For our analysis, we have adopted \textbf{Best-first} method. This scheme adopts a \textit{greedy approach} to select an attribute subset that is most likely to make better predictions. Its peculiarity it that it does not just terminate when the performance starts to drop but keeps a list of all attribute subsets evaluated so far, sorted in order of the performance measure, so that it can revisit an earlier configuration instead \cite{FalessiDataMining}. 
+
+Best-first method implementation is provided by \texttt{Weka}\footnote{\texttt{https://www.cs.waikato.ac.nz/ml/weka/}}, an open source machine learning software.
 
 \subsubsection{Results analysis}
 \hfill\\
