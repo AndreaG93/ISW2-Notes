@@ -17,6 +17,7 @@
 \usepackage{adjustbox}
 \usepackage{threeparttable}
 \usepackage{xspace}
+\usepackage{placeins}
 \usepackage[nameinlink]{cleveref}
 
 \expandafter\newcommand\csname r@tocindent4\endcsname{4in}
@@ -301,28 +302,78 @@ How to select relevant features?
 
 Clearly, the best way to select relevant attributes is \textit{manually}, based on a deep understanding of the learning problem. However, fortunately, automatic methods exist too. 
 
-\subsubsection{Our implementation}
-\hfill\\
 For our analysis, we have adopted \textbf{Best-first} method. This scheme adopts a \textit{greedy approach} to select an attribute subset that is most likely to make better predictions. Its peculiarity it that it does not just terminate when the performance starts to drop but keeps a list of all attribute subsets evaluated so far, sorted in order of the performance measure, so that it can revisit an earlier configuration instead \cite{FalessiDataMining}. 
 
-Best-first method implementation is provided by \texttt{Weka}\footnote{\texttt{https://www.cs.waikato.ac.nz/ml/weka/}}, an open source machine learning software.
+At this point, our aim is to evaluate the advantages deriving from using a feature selection technique as best-first. How to do that?
 
-\subsubsection{Results analysis}
+\subsubsection{How to evaluate classifier accuracy}
 \hfill\\
-Comparing results derived from our dataset processed using Best First search method with those processed without feature selection algorithms, we have noted that Best First method is capable to \textbf{improve the accuracy of specific classifiers}.
- 
-In fact, as you can see from \textbf{\cref{fig:BOOKKEEPER:FeatureSelectionWithoutSampling}}, containing prediction evaluation of BookKeeper dataset, when a \textit{Naive Bayes} classifier is used (without any sampling scheme), exploiting Best First method, we have obtained following results:
 
+According to project specifications, we have used following classifiers, which implementation is provided by \texttt{Weka}\footnote{\texttt{https://www.cs.waikato.ac.nz/ml/weka/}}, an open source machine learning software:
+\begin{itemize}
+\item \textbf{Random Forest}
+\item \textbf{IBK}
+\item \textbf{Naive Bayes}
+\end{itemize}
+
+Our classifier's accuracy evaluation method consists of measuring following parameter:
+
+\begin{description}
+
+\item[\textbf{Recall}] also known as \textbf{true positive rate}, measures correctly predicted buggy instances among all buggy instances:
+
+\begin{equation}
+\dfrac{TP}{TP + FN}
+\end{equation}
+
+\item[\textbf{Precision}] which tell us many times our classifier has correctly classified an instance as buggy:
+
+\begin{equation}
+\dfrac{TP}{TP + FP}
+\end{equation}
+
+\item[\textbf{AUC}] measures the area under the \textit{receiver operating characteristic} (\textbf{ROC}) curve, plotted using \textit{false positive rate} and \textit{true positive rate} together.
+
+\item[\textbf{Kappa}] tell to us how many times our classifier was been more accurate than a dummy classifier:
+
+\begin{equation}
+\dfrac{\text{Accuracy of classifier} - \text{Accuracy of dummy classifier}}{1 - \text{Accuracy of dummy classifier}}
+\end{equation}
+
+\end{description}
+\hfill\\
+\subsubsection{Evaluation results}
+\hfill\\
+
+Comparing results derived by processing our data-sets using best-first technique with those processed without feature selection algorithms, we have noted that best-first method is capable to \textbf{improve the accuracy of specific classifiers}.
+ 
+As you can observe from \textbf{\cref{BOOKKEEPER-FeatureSelection}}, using our BookKeeper™ dataset, when a Naive Bayes classifier is used, exploiting best-first method without any sampling scheme (which we will describe in next section), we have obtained following results:
 \begin{itemize}
 \item \textit{Recall} parameter increased by $27.72\%$, passing from a value equal to $0.440$ to $0.562$. 
 \item \textit{Kappa} parameter increased by $40.22\%$, from $0.179$ to $0.251$. 
 \item \textit{ROC} parameter increased by $2.47\%$, from $0.686$ to $0.703$.
 \item \textit{Precision} parameter decrease by $1.94\%$, from $0.630$ to $0.618$.
 \end{itemize}
- 
-In summary, our experiments show that Naive Bayes classifier improves its accuracy when Best First is used. 
 
-However, using others classifiers, we have obtained very different results. For example, when \textbf{Random Forest} classifier is used, our experiment results show that: 
+Our results confirm that Naive Bayes classifier improves its accuracy when best-first method is used. 
+
+
+
+\begin{figure*}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{./BOOKKEEPER/FeatureSelection.png}
+  \caption{Comparison of classifiers accuracy when using a feature selection algorithm. No sampling technique applied. BookKeeper™ project.}
+  \label{BOOKKEEPER-FeatureSelection}
+\end{figure*}
+
+\begin{figure*}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{./OPENJPA/FeatureSelection.png}
+  \caption{Comparison of classifiers accuracy when using a feature selection algorithm. No sampling technique applied. OpenJPA™ project.}
+  \label{OPENJPA-FeatureSelection}
+\end{figure*}
+
+However, using others classifiers, we have obtained very different results. In fact, when random forest classifier is used, our experiment's results show that: 
 
 \begin{itemize}
 \item \textit{Recall} parameter decreased by $12,5\%$, passing from a value equal to $0.612$ to $0.544$. 
@@ -330,16 +381,11 @@ However, using others classifiers, we have obtained very different results. For 
 \item Both \textit{ROC} and \textit{Precision} parameters decreased by $2.87\%$ and $4.84\%$ respectively.
 \end{itemize}
 
-\textbf{IBK} classifier shows results very similar to those of Random Forest too.
+In other words, when Random Forest classifier is used, its accuracy get worse when best-first method is applied. IBK classifier shows results very similar to those of Random Forest. Using OpenJPA™ dataset, results are similar. 
 
-\begin{figure*}[h]
-  \centering
-  \includegraphics[width=\linewidth]{1 - BOOKKEEPER - FeatureSelectionWithoutSampling.png}
-  \caption{System Architecture}
-  \label{fig:BOOKKEEPER:FeatureSelectionWithoutSampling}
-\end{figure*}
+\FloatBarrier
 
-\subsubsection{Sampling}
+\subsection{Sampling}
 \hfill\\
 
 As known, performance of a software defect prediction model depends heavily on the data on which it was trained. In fact, defect prediction models that are trained on imbalanced datasets, that is datasets where the proportion of defective and clean modules is not equally represented, are highly susceptible to producing inaccurate prediction models \cite{FalessiSampling}
@@ -378,33 +424,7 @@ In fact, we were able to reach maximum value of Kappa and ROC parameter, while p
 
 \subsubsection{Introduction}
 \hfill\\
-Naturally, since many different classifiers are available, it is very important to select the \textit{most accurate one}. 
 
-Our classifier evaluation method consists of measuring following parameter:
-
-\begin{description}
-
-\item[\textbf{Recall}] also known as \textbf{true positive rate}, measures correctly predicted buggy instances among all buggy instances:
-
-\begin{equation}
-\dfrac{TP}{TP + FN}
-\end{equation}
-
-\item[\textbf{Precision}] which tell us many times our classifier has correctly classified an instance as buggy:
-
-\begin{equation}
-\dfrac{TP}{TP + FP}
-\end{equation}
-
-\item[\textbf{AUC}] measures the area under the \textit{receiver operating characteristic} (\textbf{ROC}) curve, plotted using \textit{false positive rate} and \textit{true positive rate} together.
-
-\item[\textbf{Kappa}] tell to us how many times our classifier was been more accurate than a dummy classifier:
-
-\begin{equation}
-\dfrac{\text{Accuracy of classifier} - \text{Accuracy of dummy classifier}}{1 - \text{Accuracy of dummy classifier}}
-\end{equation}
-
-\end{description}
 
 Is extremely important to emphasize that the data-set involved during training phase, that is the so called \textit{training set}, \textit{cannot} be used to measure above parameters due to following reasons:
 \begin{itemize}
