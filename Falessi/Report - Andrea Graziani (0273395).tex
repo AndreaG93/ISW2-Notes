@@ -18,6 +18,7 @@
 \usepackage{threeparttable}
 \usepackage{xspace}
 \usepackage{placeins}
+\usepackage{boxhandler}
 \usepackage[nameinlink]{cleveref}
 
 \expandafter\newcommand\csname r@tocindent4\endcsname{4in}
@@ -79,7 +80,7 @@ stringstyle=\color{black},
   \country{Italy}
 }
 
-\keywords{Testing, Equivalence Class Partitioning, Boundary Value Analysis, Mutation Testing}
+\keywords{Software Defects Prediction, Feature Selection, Sampling, Walk-Forward}
 \maketitle
 
 \section{Deliverable 2}
@@ -101,9 +102,16 @@ How to build a software defect prediction model?
 In this report, we will describe a software defect prediction model based on \textbf{machine learning} techniques, which building passes through following steps:
 
 \begin{itemize}
-\item \textbf{Dataset building}.
-\item \textbf{Dataset labelling}.
-\item \textbf{Preprocessing}.
+\item \textbf{Dataset building}
+\item \textbf{Dataset labelling}
+\item \textbf{Preprocessing}, using techniques like followings: 
+\begin{itemize}
+\item \textbf{Features Selection}
+\item \textbf{Sampling}
+\end{itemize}
+
+\item \textbf{Training and Testing}
+\item \textbf{Classification}
 \end{itemize}
 
 
@@ -292,6 +300,8 @@ In order to remedy, literature suggest \textbf{to remove the most recent release
 
 \subsection{Preprocessing}
 
+\subsubsection{Feature selection}
+\hfill\\
 After generating our data-set with metrics and labels, we applied a preprocessing technique called \textbf{feature selection} or \textbf{attribute selection}.
 
 As known, most machine learning algorithms are designed to learn which are the most appropriate attributes to use for making their decisions. For example, decision tree methods choose the most promising attribute to split on at each point and should never select irrelevant or unhelpful attributes \cite{FalessiDataMining}. Although, theoretically, having more attributes give us a more discriminating power, in practice, adding irrelevant attributes to a dataset, performances of machine learning systems degrades \cite{FalessiDataMining}. 
@@ -304,9 +314,9 @@ Clearly, the best way to select relevant attributes is \textit{manually}, based 
 
 For our analysis, we have adopted \textbf{Best-first} method. This scheme adopts a \textit{greedy approach} to select an attribute subset that is most likely to make better predictions. Its peculiarity it that it does not just terminate when the performance starts to drop but keeps a list of all attribute subsets evaluated so far, sorted in order of the performance measure, so that it can revisit an earlier configuration instead \cite{FalessiDataMining}. 
 
-At this point, our aim is to evaluate the advantages deriving from using a feature selection technique as best-first. How to do that?
+At this point, our aim is to evaluate the advantages deriving from using a feature selection technique like \textit{Best-First}. How to do that?
 
-\subsubsection{How to evaluate classifier accuracy}
+\paragraph{How to evaluate classifier accuracy}
 \hfill\\
 
 According to project specifications, we have used following classifiers, which implementation is provided by \texttt{Weka}\footnote{\texttt{https://www.cs.waikato.ac.nz/ml/weka/}}, an open source machine learning software:
@@ -342,12 +352,12 @@ Our classifier's accuracy evaluation method consists of measuring following para
 
 \end{description}
 \hfill\\
-\subsubsection{Evaluation results}
+\paragraph{Evaluation results}
 \hfill\\
 
-Comparing results derived by processing our data-sets using best-first technique with those processed without feature selection algorithms, we have noted that best-first method is capable to \textbf{improve the accuracy of specific classifiers}.
+Comparing results derived by processing our data-sets using best-first technique with those processed without feature selection algorithms, we have noted that \textit{Best-First} method is capable to \textbf{improve the accuracy of specific classifiers}.
  
-As you can observe from \textbf{\cref{BOOKKEEPER-FeatureSelection}}, using our BookKeeper™ dataset, when a Naive Bayes classifier is used, exploiting best-first method without any sampling scheme (which we will describe in next section), we have obtained following results:
+As you can observe from \textbf{\cref{BOOKKEEPER-FeatureSelection}}, using our BookKeeper™ dataset, when a \textit{Naive Bayes} classifier is used, exploiting \textit{Best-First} method without any sampling scheme (which we will describe in next section), we have obtained following results:
 \begin{itemize}
 \item \textit{Recall} parameter increased by $27.72\%$, passing from a value equal to $0.440$ to $0.562$. 
 \item \textit{Kappa} parameter increased by $40.22\%$, from $0.179$ to $0.251$. 
@@ -355,25 +365,23 @@ As you can observe from \textbf{\cref{BOOKKEEPER-FeatureSelection}}, using our B
 \item \textit{Precision} parameter decrease by $1.94\%$, from $0.630$ to $0.618$.
 \end{itemize}
 
-Our results confirm that Naive Bayes classifier improves its accuracy when best-first method is used. 
-
-
+Our results confirm that \textit{Naive Bayes} classifier improves its accuracy when \textit{Best-First} method is used. 
 
 \begin{figure*}[h!]
   \centering
   \includegraphics[width=\textwidth]{./BOOKKEEPER/FeatureSelection.png}
-  \caption{Comparison of classifiers accuracy when using a feature selection algorithm. No sampling technique applied. BookKeeper™ project.}
+  \caption{Comparison of classifiers accuracy when using a feature selection algorithm. No sampling technique applied. \newline BookKeeper™ project. \newline}
   \label{BOOKKEEPER-FeatureSelection}
 \end{figure*}
 
 \begin{figure*}[h!]
   \centering
   \includegraphics[width=\textwidth]{./OPENJPA/FeatureSelection.png}
-  \caption{Comparison of classifiers accuracy when using a feature selection algorithm. No sampling technique applied. OpenJPA™ project.}
+  \caption{Comparison of classifiers accuracy when using a feature selection algorithm. No sampling technique applied.\newline OpenJPA™ project. \newline}
   \label{OPENJPA-FeatureSelection}
 \end{figure*}
 
-However, using others classifiers, we have obtained very different results. In fact, when random forest classifier is used, our experiment's results show that: 
+However, using others classifiers, we have obtained very different results. In fact, when \textit{Random Forest} classifier is used, our results show that: 
 
 \begin{itemize}
 \item \textit{Recall} parameter decreased by $12,5\%$, passing from a value equal to $0.612$ to $0.544$. 
@@ -381,52 +389,87 @@ However, using others classifiers, we have obtained very different results. In f
 \item Both \textit{ROC} and \textit{Precision} parameters decreased by $2.87\%$ and $4.84\%$ respectively.
 \end{itemize}
 
-In other words, when Random Forest classifier is used, its accuracy get worse when best-first method is applied. IBK classifier shows results very similar to those of Random Forest. Using OpenJPA™ dataset, results are similar. 
+In other words, when \textit{Random Forest} classifier is used, its accuracy get worse when \textit{Best-First} method is applied. \textit{IBK} classifier shows results very similar to those of \textit{Random Forest}. Despite some differences, using OpenJPA™ dataset, results are similar. 
 
 \FloatBarrier
 
-\subsection{Sampling}
+\subsubsection{Sampling}
 \hfill\\
 
-As known, performance of a software defect prediction model depends heavily on the data on which it was trained. In fact, defect prediction models that are trained on imbalanced datasets, that is datasets where the proportion of defective and clean modules is not equally represented, are highly susceptible to producing inaccurate prediction models \cite{FalessiSampling}
+As known, performance of a software defect prediction model depends heavily on the data on which it was trained.
 
-To mitigate the risk of imbalanced datasets during our analysis, we have adopt following class rebalancing techniques.
+In fact, when a defect prediction model is trained on \textbf{imbalanced datasets}, that is using a datasets where the proportion of defective and clean modules is not equally represented, it is \textit{highly susceptible to producing inaccurate prediction models} \cite{FalessiSampling}.
+
+To mitigate the risk of an imbalanced dataset, is possible to use several \textit{sampling} techniques. In compliance with the project specifications, we have adopted following techniques.
 
 \begin{description}
-\item[Over-sampling] It randomly samples with replacement the minority class to be the same size as the majority class. It is also known as up-sampling.
+\item[Over-sampling] It randomly samples with replacement the minority class to be the same size as the majority class. It is also known as \textit{up-sampling}.
 
-\item[Under-sampling] It samples the majority class in order to reduce the number of majority modules to be the same number as the minority class. It is also known as down-sampling.
+\item[Under-sampling] It samples the majority class in order to reduce the number of majority modules to be the same number as the minority class. It is also known as \textit{down-sampling}.
 
 \item[SMOTE] This technique combats the disadvantages of both over-sampling and under-sampling techniques, creating artificial data based on the feature space similarities from the minority class. 
 
 \end{description}
 
-\subsubsection{Results analysis}
+\paragraph{Our implementation}
 \hfill\\
-Comparing results derived from our dataset processed using Best First search method with those processed without feature selection algorithms, we have noted that Best First method is capable to \textbf{improve the accuracy of specific classifiers}.
+The implementations of aforementioned sampling techniques are provided, once again, by \texttt{Weka} software.
 
-As you can see from \textbf{\cref{fig:BOOKKEEPER:SamplingNoFeatureSelection}}, concerning
-Concernging 
+To measure advantages deriving from using a sampling method, we evaluated our classifiers accuracy both when a sampling technique is exploited and when no sampling is used. In this case, no feature selection algorithm was been used.
 
 \begin{itemize}
-\item Independently from used classifier, concerning \textit{Recall} parameter, under-sampling technique perform better than all other sampling techniques.
 
-\item When Naive Bayes classifier is used, our results state that, in order to achieve better predictions accuracy, SMOTE technique performs better than any other. 
+\item Using BookKeeper™ dataset,our results, shown in \textbf{\cref{BOOKKEEPER-Sampling}}, show that:
+\begin{itemize}
 
-In fact, we were able to reach maximum value of Kappa and ROC parameter, while precision is very slightly less than result obtained with no sampling. 
+\item Regardless of the classifier used, \textit{Recall} parameter improves always when any sampling technique is applied. In particular, \textit{Random Forest} classifier using \textit{under-sampling} achieves the highest \textit{Recall} value, increasing by $26.63\%$ the value achieved by the same classifier when no sampling is used.
+
+\item Generally, \textit{Precision} parameter gets little worse when any sampling technique is applied. The worst results are achieved using \textit{Naive Bayes} classifier with \textit{under-sampling} technique, decreasing by $2.77\%$ the value achieved by the same classifier when no sampling is used.
+
+\item \textit{ROC} parameter gets very little worse when any sampling technique is applied too. The only exception is represented by \textit{Naive Bayes} classifier with \textit{SMOTE} technique which perform slightly better than when no sampling is used.
+
+\item Regarding \textit{Kappa} parameter, \textit{Naive Bayes} performs very well when any sampling technique is applied, reaching best results when \textit{SMOTE} technique is used. Other classifier perform generally worse. The worst results are achieved using \textit{IBK} classifier with \textit{over-sampling} technique.
 
 \end{itemize}
 
 
+\item Using OpenJPA™ dataset, our results, shown in \textbf{\cref{OPENJPA-Sampling}}, show that:
+\begin{itemize}
 
+\item Like previously, regardless of the classifier used, \textit{Recall} parameter improves always. In particular, \textit{Random Forest} classifier using \textit{under-sampling} achieves the highest \textit{Recall} value, increasing by $64.63\%$ the value achieved by the same classifier when no sampling is used; a very good results.
 
-\subsection{Validation technique}
+\item Generally, \textit{Precision} parameter gets little worse when any sampling technique is applied. All classifier perform very bad when \textit{under-sampling} is used. The only exception is represented by \textit{Naive Bayes} classifier with \textit{SMOTE} technique which perform slightly better than when no sampling is used.
 
-\subsubsection{Introduction}
-\hfill\\
+\item \textit{ROC} parameter gets very little worse when any sampling technique is applied too. The only exception is represented by \textit{Random Forest} classifier with \textit{SMOTE} technique which performs better.
 
+\item Using OpenJPA™ dataset, regarding \textit{Kappa} parameter, all classifier perform very bad when \textit{under-sampling} is used. \textit{Naive Bayes} performs better when \textit{SMOTE} is used. In all other case, worse results are achieved.
 
-Is extremely important to emphasize that the data-set involved during training phase, that is the so called \textit{training set}, \textit{cannot} be used to measure above parameters due to following reasons:
+\end{itemize}
+\end{itemize}
+
+\begin{figure*}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{./BOOKKEEPER/Sampling.png}
+  \caption{Comparison of classifiers accuracy when using sampling algorithms. No feature selection technique applied. \newline BookKeeper™ project. \newline}
+  \label{BOOKKEEPER-Sampling}
+\end{figure*}
+
+\begin{figure*}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{./OPENJPA/Sampling.png}
+  \caption{Comparison of classifiers accuracy when using sampling algorithms. No feature selection technique applied.\newline OpenJPA™ project. \newline\newline\newline\newline\newline}
+  \label{OPENJPA-Sampling}
+\end{figure*}
+
+\FloatBarrier
+
+\subsection{Training and Testing}
+
+At this point we can train our software defect prediction model but, firstly, we will talk about \textbf{validation techniques}. Why are they so important?
+
+Validation techniques describe a specific way to split available data in \textit{training set} and \textit{test set} and they are extremely important to do our evaluations. 
+
+First of all, is very important to emphasize that the data-set involved during training phase \textit{cannot} be used to measure above parameters due to following reasons:
 \begin{itemize}
 
 \item We \textit{already} know the classifications of each instance belonging to training set, therefore we are not interested in accuracy about predictions involving these data.
@@ -434,14 +477,12 @@ Is extremely important to emphasize that the data-set involved during training p
 \item Any estimate of performance based on training data will be, clearly, optimistic and, therefore, not very useful.
 \end{itemize}
 
-Therefore, to evaluate classifier's performance, we have to use a new data-set, containing instances \textit{not} used during training phase; this independent dataset is called the \textit{test set}. 
-
-In order to do our evaluations, we have to use a \textbf{validation technique} which describes a specific way to split available data in training and test sets. 
+Therefore, to evaluate classifier's performance, we have to use a new data-set, containing instances \textit{not} used during training phase; this independent dataset is the test set. To identify our test set we need to use a validation technique. 
 
 \subsubsection{The walk-forward validation technique}
 \hfill\\
 
-To evaluate our classifiers, we have adopted, in accordance with project's specifications, a widely used validation technique called \textbf{Walk-forward}. Precisely, it is a time-series validation technique because it has the ability to \textbf{preserve the temporal order of data}, preventing that testing set have data antecedent to the training set.
+In accordance to project's specifications, we have adopted a very common validation technique called \textbf{Walk-forward}. Precisely, it is a \textit{time-series} validation technique because it has the ability to \textit{preserve the temporal order of data}, preventing that testing set have data antecedent to the training set.
 
 According to walk-forward technique, a data-set must be split into parts, which must be the smallest units that can be \textit{chronologically} ordered. Therefore, during the development of our project, our data-set was been divided into parts containing all source code files belonging to each project's release, the latter are been chronologically ordered respect to their release date.
 
@@ -451,35 +492,56 @@ For example, regarding \textbf{BookKeeper}™ project, we have built a dataset c
 
 Particularly, during first run, the first part is used as a training, and the second as testing. During the second run the first two parts are used as a training and the third as testing, and so on. 
  
+\paragraph{Some experiments} 
+\hfill\\
+At this point, we wanted to know how accuracy's parameters behave according to the number of releases used for training using walk-forward validation technique. Results, reported in \textbf{\cref{BOOKKEEPER-History}} and \textbf{\cref{OPENJPA-History}}, show that:
 
-\begin{figure}[h]
+\begin{itemize}
+\item Regarding BookKeeper™ project, regardless of the classifier used, all parameters improve linearly, increasing the number of releases used for training. Better results are achieved using $6$ releases during training phase.  
+
+\item Regarding OpenJPA™ project, the graph shows a very irregular trend about all parameters. However, regardless of the classifier used, better results are achieved using $9$ releases, however they start to get worse immediately after.
+\end{itemize}
+
+\begin{figure}
   \centering
-  \includegraphics[width=\linewidth]{./BOOKKEEPER/1 - PrecisionROCPlot.png}
-  \caption{System Architecture}
-  \label{fig:BOOKKEEPER:SamplingNoFeatureSelection}
+  \includegraphics[width=10.5cm, height=6cm]{./BOOKKEEPER/History.png}
+  \caption{Trend of the accuracy's parameters respect to the releases number. \newline BookKeeper™ project. \newline}
+  \label{BOOKKEEPER-History}
 \end{figure}
 
-
- 
-
-
-
-\begin{figure*}[h]
+\begin{figure}
   \centering
-  \includegraphics[width=\linewidth]{1 - BOOKKEEPER - SamplingNoFeatureSelection}
-  \caption{System Architecture}
-  \label{fig:BOOKKEEPER:SamplingNoFeatureSelection}
+  \includegraphics[width=10.5cm, height=6cm]{./OPENJPA/History.png}
+  \caption{Trend of the accuracy's parameters respect to the releases number. \newline OpenJPA™ project.}
+  \label{OPENJPA-History}
+\end{figure}
+
+\paragraph{Final comparison} 
+\hfill\\
+From accuracy point of view, what is the best classifier? What sampling or feature selection algorithm perform better with our datasets?
+
+To reply to these question, we have to simply observer \textbf{\cref{BOOKKEEPER-Total}} and \textbf{\cref{OPENJPA-Total}}, which contain a summary evaluation of all possible combination of algorithms and classifiers using BookKeeper™ and OpenJPA™ datasets respectively.
+
+\begin{figure*}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{./BOOKKEEPER/Total.png}
+  \caption{Summary of accuracy of our classifiers. \newline BookKeeper™ project. \newline}
+  \label{BOOKKEEPER-Total}
 \end{figure*}
 
-
-
-
+\begin{figure*}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{./OPENJPA/Total.png}
+  \caption{Summary of accuracy of our classifiers. \newline OpenJPA™ project. \newline\newline\newline\newline\newline}
+  \label{OPENJPA-Total}
+\end{figure*}
 
 
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib}
 
+\FloatBarrier
 
 \end{document}
 \endinput
