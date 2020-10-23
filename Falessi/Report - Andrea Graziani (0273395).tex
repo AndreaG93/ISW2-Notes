@@ -82,6 +82,34 @@ stringstyle=\color{black},
 
 \keywords{Software Defects Prediction, Feature Selection, Sampling, Walk-Forward}
 \maketitle
+\section{Deliverable 1}
+
+\subsection{Introduction}
+
+How to improve existing software development processes?
+
+Today, many organizations accomplishes very good business results using \textbf{ISACA®’s CMMI®} maturity model, that is\textit{a proven set of best practices, organized by critical business capabilities, used to help organizations around the world, in any industry, offering a guide to optimize their business results} \cite{CMMIINSTITUTE}.
+
+We want to precise that a properly description of CMMI is out the scope of this paper, therefore we assume that reader knows main aspect of CMMI maturity model.
+
+As known, there are five maturity levels defined by the model. For example, at \textit{level $3$}, metrics are collected, analysed and used to status development and to make corrections to development efforts, as necessary. At \textit{level $4$}, measurements are quantitatively analysed to control process performance of the project and to develop a quantitative understanding of the quality of products to achieve specific quality goals. How many organization do that?
+
+One of the main tool adopted to quantitative analyse development process is \textit{control charts}, according to which data were collected during these product life cycle phases and quantitatively analyzed using statistical methods
+
+\subsection{Our experiments}
+
+\textbf{\cref{ProcessControl}} shows a control chart reporting bug fixes number over the time, regarding \textbf{Apache Geode™} open-source project\footnote{\url{https://github.com/apache/geode}}.
+
+If a process is mature and under statistical process control, all events should lie within the upper and lower control limits, which are respectively equal to $+/-3$ standard deviations. If an event falls out of the control limits the process is said to be out of statistical process control and the reason for this anomaly needs to be investigated for cause and the process brought back under control. 
+
+In our case, since the number of bug fixes is always within the upper and lower limits, Apache Geode™ development process is mature and under statistical process control.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=10.5cm, height=6cm]{./ProcessControlChart.png}
+  \caption{Process control chart representing bug fixes trend of Apache Geode™}
+  \label{ProcessControl}
+\end{figure}
 
 \section{Deliverable 2}
 
