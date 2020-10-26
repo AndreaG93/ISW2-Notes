@@ -88,28 +88,63 @@ stringstyle=\color{black},
 
 How to improve existing software development processes?
 
-Today, many organizations accomplishes very good business results using \textbf{ISACA®’s CMMI®} maturity model, that is\textit{a proven set of best practices, organized by critical business capabilities, used to help organizations around the world, in any industry, offering a guide to optimize their business results} \cite{CMMIINSTITUTE}.
+Today, in order to accomplish good business results, many organizations around the world, in any industry, adopt a proven set of best practices belonging to a process level improvement training and appraisal program called \textbf{Capability Maturity Model Integration} (\textbf{CMMI})\cite{CMMIINSTITUTE}.
 
-We want to precise that a properly description of CMMI is out the scope of this paper, therefore we assume that reader knows main aspect of CMMI maturity model.
+As known\footnote{A properly description of CMMI is out the scope of this report, therefore we assume that reader knows its main features.}, there are five maturity levels defined by that model. For example, at level $3$, \textit{metrics are collected, analysed and used to check development status and to make corrections, if necessary}. At level $4$, measurements are \textit{quantitatively analysed} to control process performance of the project and \textit{to develop a quantitative understanding of the quality of products}, in order to achieve specific quality goals \cite{FLORENCE}.
 
-As known, there are five maturity levels defined by the model. For example, at \textit{level $3$}, metrics are collected, analysed and used to status development and to make corrections to development efforts, as necessary. At \textit{level $4$}, measurements are quantitatively analysed to control process performance of the project and to develop a quantitative understanding of the quality of products to achieve specific quality goals. How many organization do that?
-
-One of the main tool adopted to quantitative analyse development process is \textit{control charts}, according to which data were collected during these product life cycle phases and quantitatively analyzed using statistical methods
+One of the main tool, adopted to quantitatively analyse a development process, is the \textit{control charts} 
+through which all data collected during product life cycle can be analysed using statistical methods\cite{FLORENCE}.
 
 \subsection{Our experiments}
 
-\textbf{\cref{ProcessControl}} shows a control chart reporting bug fixes number over the time, regarding \textbf{Apache Geode™} open-source project\footnote{\url{https://github.com/apache/geode}}.
+To show the capabilities of this tool, we built an own control chart, reported in textbf{\cref{ProcessControl}}, showing the bug-fixes number trend over all development cycle of \textbf{Apache Geode™} open-source project\footnote{\url{https://github.com/apache/geode}}.
 
-If a process is mature and under statistical process control, all events should lie within the upper and lower control limits, which are respectively equal to $+/-3$ standard deviations. If an event falls out of the control limits the process is said to be out of statistical process control and the reason for this anomaly needs to be investigated for cause and the process brought back under control. 
-
-In our case, since the number of bug fixes is always within the upper and lower limits, Apache Geode™ development process is mature and under statistical process control.
+Control charts are capable to provide en evidence of development process stability, identifying undesirable trends. In fact, if a process is \textit{mature and under statistical process control}, all events should lie within the upper and lower control limits, which are respectively equal to mean $+/-3$ standard deviations. If an event falls out of the control limits the process is said to be out of statistical process control and the reason for this anomaly needs to be investigated for cause and the process brought back under control. 
 
 \begin{figure}[h!]
   \centering
   \includegraphics[width=10.5cm, height=6cm]{./ProcessControlChart.png}
-  \caption{Process control chart representing bug fixes trend of Apache Geode™}
+  \caption{Process control chart representing bug-fixes trend of Apache Geode™ open-source project}
   \label{ProcessControl}
 \end{figure}
+
+Fortunately, control chart reported in \textbf{\cref{ProcessControl}} shows that the number of bug fixes is always within the upper and lower limits, therefore, since there are no anomalies, development process can be considered as under statistical process control.
+
+Let's make now some interesting considerations:
+
+\begin{itemize}
+\item Why the control chart shows a very low number of number of bug fixes up to middle 2015, reporting, conversely, an important increase towards the end of the same year?
+\begin{itemize}
+\item Originally, a software house, called "\textit{GemStone Systems Inc}", developed a product called \texttt{GemFire}, a low latency transactional data engine used in financial contexts, like trading operations.
+
+In May of 2010, \texttt{GemStone} was acquired by "\textit{SpringSource}" which, not long after, was acquired in turn by "\textit{Pivotal}"\footnote{\url{https://en.wikipedia.org/wiki/Pivotal_Software}}.
+
+In 2015, Pivotal proposed the creation of Apache Geode™ to the "\textit{Apache Software Foundation}" to help its development. Apache Geode™ was born.
+
+According to Apache Geode™ commit history, the \textit{first commit} is date on 28 April 2015, which represented a merely import of the source code previously developed by Pivotal. However, the \textit{first release}, is date on 6 February 2016.
+
+Therefore, the reason according to which the control chart shows a very low number of number of bug fixes at the beginning is because many bugs were been yet undiscovered. As we will see later, at that stage of development cycle there were may "\textit{dormant defects}".
+\end{itemize}
+
+\item Why the control chart shows a very low number of number of bug fixes during 2020?
+\begin{itemize}
+\item We do \textit{not} know with certainty. According to GitHub logs\footnote{\url{https://github.com/apache/geode/graphs/contributors}}, community contributions started to drop decisively from second half of the year; in fact the number of commits per-day drops under 20 when, normally, it exceeds 30$\setminus$40. 
+
+Therefore, we believe that the reduced development activity is the reason of the trend shown by our control chart.
+\end{itemize}
+
+\item Why the control chart shows a very high number of number of bug during 2017?
+\begin{itemize}
+\item If you look to the number of additions and deletions per week according to GitHub\footnote{\url{https://github.com/apache/geode/graphs/code-frequency}}, the number of code lines \textit{deleted} per week reached its peak in 2017, with a $3500$k lines deleted. In the same year, the number of code lines added exceeded $1500$k.
+
+Therefore, aforementioned massive changes into Apache Geode™ source code is probably the reason of the increasing of bugs and, then, of their fixes.
+
+\end{itemize}
+\end{itemize}
+
+\subsection{Our implementation}
+
+To avoid boring repetitions, all details about our implementation for data collection will be described in following section. 
 
 \section{Deliverable 2}
 
