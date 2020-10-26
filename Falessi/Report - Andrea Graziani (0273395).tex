@@ -10,6 +10,7 @@
 \usepackage{xcolor}
 \usepackage{multirow}
 \usepackage{dcolumn}
+\usepackage{soul}
 \usepackage{booktabs} 
 \usepackage{pifont}  % use /ding{55} for X... /ding{51} for check
 \usepackage{url}
@@ -42,6 +43,8 @@ stringstyle=\color{black},
 \newcommand{\abs}[1]{\left|#1\right|}
 
 
+
+
 % My 'newcommand' for standard table creation...
 \newcommand{\AndreaTable}[3]{\begin{table*}[h!]
 \caption{#1}
@@ -58,7 +61,6 @@ stringstyle=\color{black},
 \newcommand{\equivalenceClassesTable}[2]{
 \AndreaTable{#1}{llm{8cm}m{8cm}}{#2}
 }
-
 
 \definecolor{beaublue}{rgb}{0.74, 0.83, 0.9}
 
@@ -97,9 +99,9 @@ through which all data collected during product life cycle can be analysed using
 
 \subsection{Our experiments}
 
-To show the capabilities of this tool, we built an own control chart, reported in textbf{\cref{ProcessControl}}, showing the bug-fixes number trend over all development cycle of \textbf{Apache Geode™} open-source project\footnote{\url{https://github.com/apache/geode}}.
+To show the capabilities of this tool, we built an own control chart, reported in \textbf{\cref{ProcessControl}}, showing the bug-fixes number trend over all development cycle of \textbf{Apache Geode™} open-source project\footnote{\url{https://github.com/apache/geode}}.
 
-Control charts are capable to provide en evidence of development process stability, identifying undesirable trends. In fact, if a process is \textit{mature and under statistical process control}, all events should lie within the upper and lower control limits, which are respectively equal to mean $+/-3$ standard deviations. If an event falls out of the control limits the process is said to be out of statistical process control and the reason for this anomaly needs to be investigated for cause and the process brought back under control. 
+Control charts are capable to provide en evidence of development process stability, identifying undesirable trends. In fact, if a process is \textit{mature and under statistical process control}, all events should lie within the upper and lower control limits, which are respectively equal to mean $+/-3$ standard deviations. If an event falls out of the control limits the process is said to be out of statistical process control and the reason for this anomaly needs to be investigated for cause and the process brought back under control\cite{FLORENCE}. 
 
 \begin{figure}[h!]
   \centering
@@ -115,7 +117,7 @@ Let's make now some interesting considerations:
 \begin{itemize}
 \item Why the control chart shows a very low number of number of bug fixes up to middle 2015, reporting, conversely, an important increase towards the end of the same year?
 \begin{itemize}
-\item Originally, a software house, called "\textit{GemStone Systems Inc}", developed a product called \texttt{GemFire}, a low latency transactional data engine used in financial contexts, like trading operations.
+\item Let's start with a brief history. Originally, a software house, called "\textit{GemStone Systems Inc}", developed a product called \texttt{GemFire}, a low latency transactional data engine used in financial contexts, like trading operations.
 
 In May of 2010, \texttt{GemStone} was acquired by "\textit{SpringSource}" which, not long after, was acquired in turn by "\textit{Pivotal}"\footnote{\url{https://en.wikipedia.org/wiki/Pivotal_Software}}.
 
@@ -123,7 +125,7 @@ In 2015, Pivotal proposed the creation of Apache Geode™ to the "\textit{Apache
 
 According to Apache Geode™ commit history, the \textit{first commit} is date on 28 April 2015, which represented a merely import of the source code previously developed by Pivotal. However, the \textit{first release}, is date on 6 February 2016.
 
-Therefore, the reason according to which the control chart shows a very low number of number of bug fixes at the beginning is because many bugs were been yet undiscovered. As we will see later, at that stage of development cycle there were may "\textit{dormant defects}".
+Therefore, the reason according to which the control chart shows a very low number of number of bug fixes at the beginning is because, during the early stage of product development, many bugs were been yet undiscovered and, therefore, there were very low bug fixes. In other words, as we will see later, there were many "\textit{dormant defects}".
 \end{itemize}
 
 \item Why the control chart shows a very low number of number of bug fixes during 2020?
@@ -135,7 +137,7 @@ Therefore, we believe that the reduced development activity is the reason of the
 
 \item Why the control chart shows a very high number of number of bug during 2017?
 \begin{itemize}
-\item If you look to the number of additions and deletions per week according to GitHub\footnote{\url{https://github.com/apache/geode/graphs/code-frequency}}, the number of code lines \textit{deleted} per week reached its peak in 2017, with a $3500$k lines deleted. In the same year, the number of code lines added exceeded $1500$k.
+\item If you look to the number of additions and deletions per week according to GitHub history data\footnote{\url{https://github.com/apache/geode/graphs/code-frequency}}, the number of code lines \textit{deleted} per week reached its peak in 2017, with a $3500$k lines deleted. In the same year, the number of code lines added exceeded $1500$k.
 
 Therefore, aforementioned massive changes into Apache Geode™ source code is probably the reason of the increasing of bugs and, then, of their fixes.
 
@@ -144,7 +146,7 @@ Therefore, aforementioned massive changes into Apache Geode™ source code is pr
 
 \subsection{Our implementation}
 
-To avoid boring repetitions, all details about our implementation for data collection will be described in following section. 
+To avoid boring repetitions, since application logic is very similar to that used for Deliverable 2, all details about our implementation will be described in following section. 
 
 \section{Deliverable 2}
 
@@ -162,7 +164,7 @@ Although it's not practically possible to eliminate each and every defect from a
 
 How to build a software defect prediction model? 
 
-In this report, we will describe a software defect prediction model based on \textbf{machine learning} techniques, which building passes through following steps:
+In this report, we will describe our software defect prediction model based on \textbf{machine learning} techniques, which building passes through following steps:
 
 \begin{itemize}
 \item \textbf{Dataset building}
@@ -174,9 +176,9 @@ In this report, we will describe a software defect prediction model based on \te
 \end{itemize}
 
 \item \textbf{Training and Testing}
-\item \textbf{Classification}
 \end{itemize}
 
+Technically, there is another step, that is \textbf{classification}, according to which we use our prediction model to classify new data. This step is out the scope of this report.
 
 \subsection{Dataset building}
 
@@ -345,7 +347,7 @@ However, when sometimes \texttt{git} tags were not available, we have identified
 
 At this point, knowing commit associated to each release, we are able to retrieve all source code files associated to each project's release, however we still have to label them.
 
-To do that we need to discover all known project's issues and, to do that, we queried once again \texttt{Jira} to obtain the identifiers of all issues with type \texttt{"Bug"} and status \texttt{"Closed"} (or \texttt{"resolved"}). We remember that is possible to find the implementation of this query procedure inside \texttt{get\-Issues\-Registry} method into \texttt{Jira} class.
+To do that we need to discover all known project's issues and, to do that, we queried once again \texttt{Jira} to obtain the identifiers of all issues with type \texttt{"Bug"} and status \texttt{"Closed"} (or \texttt{"resolved"}). We remember that is possible to find the implementation of this query procedure inside \texttt{get\-Issues\-Registry} method into \texttt{Jira} class. Please note that, the same logic was used to build all necessary data for Deliverable 1 too.
 
 Finally, to label each source code file as buggy or not, we need to check if the release, which the file belongs to, is an "\textit{Affected Version}" (\textbf{AV}).
 
@@ -414,21 +416,6 @@ Our classifier's accuracy evaluation method consists of measuring following para
 \end{equation}
 
 \end{description}
-\hfill\\
-\paragraph{Evaluation results}
-\hfill\\
-
-Comparing results derived by processing our data-sets using best-first technique with those processed without feature selection algorithms, we have noted that \textit{Best-First} method is capable to \textbf{improve the accuracy of specific classifiers}.
- 
-As you can observe from \textbf{\cref{BOOKKEEPER-FeatureSelection}}, using our BookKeeper™ dataset, when a \textit{Naive Bayes} classifier is used, exploiting \textit{Best-First} method without any sampling scheme (which we will describe in next section), we have obtained following results:
-\begin{itemize}
-\item \textit{Recall} parameter increased by $27.72\%$, passing from a value equal to $0.440$ to $0.562$. 
-\item \textit{Kappa} parameter increased by $40.22\%$, from $0.179$ to $0.251$. 
-\item \textit{ROC} parameter increased by $2.47\%$, from $0.686$ to $0.703$.
-\item \textit{Precision} parameter decrease by $1.94\%$, from $0.630$ to $0.618$.
-\end{itemize}
-
-Our results confirm that \textit{Naive Bayes} classifier improves its accuracy when \textit{Best-First} method is used. 
 
 \begin{figure*}[h!]
   \centering
@@ -444,6 +431,23 @@ Our results confirm that \textit{Naive Bayes} classifier improves its accuracy w
   \label{OPENJPA-FeatureSelection}
 \end{figure*}
 
+\FloatBarrier
+
+\paragraph{Evaluation results}
+\hfill\\
+
+Comparing results derived by processing our data-sets using best-first technique with those processed without feature selection algorithms, we have noted that \textit{Best-First} method is capable to \textbf{improve the accuracy of specific classifiers}.
+ 
+As you can observe from \textbf{\cref{BOOKKEEPER-FeatureSelection}}, using our BookKeeper™ dataset, when a \textit{Naive Bayes} classifier is used, exploiting \textit{Best-First} method without any sampling scheme (which we will describe in next section), we have obtained following results:
+\begin{itemize}
+\item \textit{Recall} parameter increased by $27.72\%$, passing from a value equal to $0.440$ to $0.562$. 
+\item \textit{Kappa} parameter increased by $40.22\%$, from $0.179$ to $0.251$. 
+\item \textit{ROC} parameter increased by $2.47\%$, from $0.686$ to $0.703$.
+\item \textit{Precision} parameter decrease by $1.94\%$, from $0.630$ to $0.618$.
+\end{itemize}
+
+Our results confirm that \textit{Naive Bayes} classifier improves its accuracy when \textit{Best-First} method is used. 
+
 However, using others classifiers, we have obtained very different results. In fact, when \textit{Random Forest} classifier is used, our results show that: 
 
 \begin{itemize}
@@ -453,8 +457,6 @@ However, using others classifiers, we have obtained very different results. In f
 \end{itemize}
 
 In other words, when \textit{Random Forest} classifier is used, its accuracy get worse when \textit{Best-First} method is applied. \textit{IBK} classifier shows results very similar to those of \textit{Random Forest}. Despite some differences, using OpenJPA™ dataset, results are similar. 
-
-\FloatBarrier
 
 \subsubsection{Sampling}
 \hfill\\
@@ -603,6 +605,8 @@ To reply to these question, we have to simply observer \textbf{\cref{BOOKKEEPER-
 
 \section{Links}
 
+\begin{table}[!ht]
+\small
 \begin{tabular}{l}
 
 \url{https://github.com/AndreaG93/ISW2-Reports} \\
@@ -620,6 +624,7 @@ To reply to these question, we have to simply observer \textbf{\cref{BOOKKEEPER-
 \url{https://sonarcloud.io/dashboard?id=AndreaG93_Deliverable-2-ISW2-Project} \\
 
 \end{tabular}
+\end{table}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib}
