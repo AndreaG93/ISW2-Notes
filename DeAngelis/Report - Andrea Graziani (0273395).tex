@@ -1553,6 +1553,27 @@ For example, on UNIX systems, the virtual machine loads classes from the directo
 Made this necessary introduction, let's start building our test set $T_1$, analysing all public methods.
 
 \subsubsection{Methods testing analysis}
+\hfill\\
+To be precise, this class contains all \texttt{static} methods; therefore no constructor was been provided.
+
+\paragraph{\texttt{toClass}}
+\hfill\\
+Inside \texttt{ClassUtil} class, there are two \textit{overloaded} methods called \texttt{toClass}, which signatures are reported in \textbf{\cref{toClassSignature1}} and \textbf{\cref{toClassSignature2}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{toClass} \#1}, label={toClassSignature1}]
+public static Class toClass(String str, ClassLoader loader)
+\end{lstlisting}
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{toClass} \#2}, label={toClassSignature2}]
+public static Class toClass(String str, boolean resolve,
+                                ClassLoader loader)
+\end{lstlisting}
+
+We will analyse only the second one, since the first one call the second method with \texttt{resolve} parameter equal to \texttt{false}.
+
+All valid and invalid equivalence classes are reported in \textbf{\cref{toClassEq}}.
+
+From identified equivalence classes, we have developed $3 \times 2 \times 2 = 12$ valid test cases and $20$ negative test cases, testing all possible combinations. In total, we built $32$ tests: all passed.
 
 \begin{table*}
 \footnotesize
@@ -1699,10 +1720,33 @@ For details, please visit: \url{https://docs.oracle.com/javase/specs/jls/se7/htm
   \end{threeparttable}
 \end{table*}
 
+\paragraph{\texttt{getPackageName}}
+\hfill\\
+Like previously, there are two \textit{overloaded} methods called \texttt{getPackageName}, which signatures are reported in \textbf{\cref{getPackageNameSignature1}} and \textbf{\cref{getPackageNameSignature2}}.
 
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{getPackageName} \#1}, label={getPackageNameSignature1}]
+public static String getPackageName(Class cls)
+\end{lstlisting}
 
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{getPackageName} \#2}, label={getPackageNameSignature2}]
+public static String getPackageName(String fullName)
+\end{lstlisting}
 
+All valid and invalid equivalence classes of the first method are reported in \textbf{\cref{getClassNameClassGetPackageNameClassEq}}, while those of the second are reported in \textbf{\cref{getClassNameStringGetPackageNameStringEq}}.
 
+\paragraph{\texttt{getClassName}}
+\hfill\\
+Like previously, there are two \textit{overloaded} methods called \texttt{getClassName}, which signatures are reported in \textbf{\cref{getClassNameSignature1}} and \textbf{\cref{getClassNameSignature2}}.
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{getClassName} \#1}, label={getClassNameSignature1}]
+public static String getClassName(Class cls)
+\end{lstlisting}
+
+\begin{lstlisting}[frame=lines,basicstyle=\ttfamily\tiny, caption={Signature of method \texttt{getClassName} \#2}, label={getClassNameSignature2}]
+public static String getClassName(String fullName)
+\end{lstlisting}
+
+All valid and invalid equivalence classes of the first method are reported in \textbf{\cref{getClassNameClassGetPackageNameClassEq}}, while those of the second are reported in \textbf{\cref{getClassNameStringGetPackageNameStringEq}}.
 
 \begin{table*}
 \footnotesize
@@ -1859,7 +1903,30 @@ Since condition coverage is less than $1$, our test set $T_2$ is \textbf{not} ad
 
 According to \texttt{PIT} report, mutation coverage of our $T_2$ test set is equal to $29$, out of a total of $71$ (mutation score $40,84 \%$). 
 
+\clearpage
 
+\section{Links}
+
+\begin{table}[!ht]
+\small
+\begin{tabular}{l}
+
+\url{https://github.com/AndreaG93/ISW2-Reports} \\
+
+\url{https://github.com/AndreaG93/ISW2-bookkeeper} \\
+
+\url{https://github.com/AndreaG93/ISW2-openjpa} \\
+
+\url{https://travis-ci.org/github/AndreaG93/ISW2-bookkeeper} \\
+
+\url{https://travis-ci.org/github/AndreaG93/ISW2-openjpa} \\
+
+\url{https://sonarcloud.io/dashboard?id=AndreaG93_ISW2-bookkeeper} \\
+
+\url{https://sonarcloud.io/dashboard?id=AndreaG93_ISW2-openjpa} \\
+
+\end{tabular}
+\end{table}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib}
