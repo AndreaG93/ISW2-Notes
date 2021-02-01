@@ -1,4 +1,0 @@
-org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy;
-org.apache.bookkeeper.util.DiskChecker;
-org.apache.openjpa.lib.util.ClassUtil;
-org.apache.openjpa.lib.util.SimpleRegex;
